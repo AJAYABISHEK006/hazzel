@@ -53,6 +53,29 @@ def is_repo() -> bool:
     return result
 
 
+def ls_files(timeout: int = 5) -> list[str] | None:
+    """Return project-relative paths of all git-tracked + untracked files.
+
+    Fast path for file enumeration on large repos: index lookup, no tree walk.
+    None when not a git repo, git missing, or the call fails.
+    """
+    if not is_repo():
+        return None
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(PROJECT_ROOT), "ls-files", "--cached", "--others", "--exclude-standard"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=timeout,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    return [line for line in (proc.stdout or "").splitlines() if line]
+
+
 def _require_repo() -> str | None:
     if not is_repo():
         return "Not a git repo here — run `git init` first, then retry."

@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+from collections import OrderedDict
 
 
 def caching_enabled():
@@ -12,7 +13,7 @@ class TTLCache:
         self._maxsize = max(1, maxsize)
         self._ttl = max(1.0, ttl)
         self._lock = threading.Lock()
-        self._data = {}
+        self._data = OrderedDict()
 
     def get(self, key):
         now = time.monotonic()
@@ -24,13 +25,14 @@ class TTLCache:
             if now >= expires:
                 self._data.pop(key, None)
                 return None
+            self._data.move_to_end(key)
             return value
 
     def set(self, key, value):
         with self._lock:
-            while len(self._data) >= self._maxsize:
-                oldest = min(self._data, key=lambda k: self._data[k][0])
-                del self._data[oldest]
+            self._data.pop(key, None)
+            if len(self._data) >= self._maxsize:
+                self._data.popitem(last=False)
             self._data[key] = (time.monotonic() + self._ttl, value)
 
     def clear(self):

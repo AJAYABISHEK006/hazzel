@@ -98,3 +98,26 @@ def test_slash_fuzzy_transpositions():
     assert "/status" in names
     assert ui._filter_slash_commands("status") == []
     assert ui._filter_slash_commands("/zzzzzz") == []
+
+
+def test_pr_list_single_line_rows(capsys):
+    body = "1\tAdd AGENTS.md startup support\tmain\tronaldsterners\n2\tFix login redirect\tfix/auth\tjane"
+    ui.show_pr_list(body)
+    out = capsys.readouterr().out
+    assert "#1" in out and "Add AGENTS.md startup support" in out
+    assert "main" in out and "ronaldsterners" in out
+    assert "#2" in out and "Fix login redirect" in out
+
+
+def test_pr_list_never_folds_mid_word(capsys, monkeypatch):
+    monkeypatch.setattr(ui, "_term_width", lambda: 50)
+    body = "1\tAdd AGENTS.md startup support for the whole project\tmain\tronaldsterners"
+    ui.show_pr_list(body)
+    lines = [l for l in capsys.readouterr().out.splitlines() if "#1" in l]
+    assert len(lines) == 1
+    assert "startu" not in lines[0] or "startup" in lines[0]
+
+
+def test_pr_list_empty(capsys):
+    ui.show_pr_list("No open pull requests.")
+    assert "No open pull requests." in capsys.readouterr().out

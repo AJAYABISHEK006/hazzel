@@ -173,15 +173,29 @@ def _all_project_files():
 
     skip = SKIP_DIRS | _MENTION_EXTRA_SKIP
     files = []
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in skip and not d.endswith(".egg-info")]
-        dirnames.sort()
-        for name in sorted(filenames):
-            files.append(os.path.relpath(os.path.join(dirpath, name), root))
+    try:
+        from .git import ls_files
+
+        git_files = ls_files()
+    except Exception:
+        git_files = None
+    if git_files is not None:
+        for name in git_files:
+            if any(part in skip or part.endswith(".egg-info") for part in name.split("/")):
+                continue
+            files.append(name)
             if len(files) >= _MENTION_FILE_CAP:
                 break
-        if len(files) >= _MENTION_FILE_CAP:
-            break
+    else:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in skip and not d.endswith(".egg-info")]
+            dirnames.sort()
+            for name in sorted(filenames):
+                files.append(os.path.relpath(os.path.join(dirpath, name), root))
+                if len(files) >= _MENTION_FILE_CAP:
+                    break
+            if len(files) >= _MENTION_FILE_CAP:
+                break
     _file_cache.update({"root": root, "ts": now, "files": files})
     return files
 
@@ -1424,21 +1438,25 @@ def show_pr_list(body):
         console.print(Text("  No open pull requests.", style=DIM_COLOR))
         rule()
         return
-    table = Table(show_header=False, box=None, pad_edge=False, padding=(0, 1, 0, 0))
-    table.add_column(overflow="fold", width=6, justify="right")
-    table.add_column(overflow="fold", ratio=1)
-    table.add_column(overflow="fold", width=20)
+    width = _term_width()
     for line in body.splitlines()[:20]:
         parts = line.split("\t")
-        num = parts[0].strip() if parts else ""
+        num = (parts[0].strip() if parts else "").lstrip("#")
         title = parts[1].strip() if len(parts) > 1 else line.strip()
-        branch = parts[2].strip() if len(parts) > 2 else ""
-        table.add_row(
-            Text(f"#{num}", style=f"bold {USER_COLOR}"),
-            Text(title[:80], style="white"),
-            Text(branch[:20], style=DIM_COLOR),
-        )
-    console.print(table)
+        branch = parts[2].strip()[:24] if len(parts) > 2 else ""
+        author = parts[3].strip()[:20] if len(parts) > 3 else ""
+        num_text = f"#{num}" if num else "#?"
+        meta = "".join(f"  ·  {p}" for p in (branch, author) if p)
+        title_max = max(12, width - (2 + len(num_text) + 2) - len(meta) - 1)
+        if len(title) > title_max:
+            title = title[:title_max - 1].rstrip() + "…"
+        row = Text()
+        row.append("  ", style=DIM_COLOR)
+        row.append(num_text, style=f"bold {USER_COLOR}")
+        row.append(f"  {title}" if title else "", style="white")
+        if meta:
+            row.append(meta, style=DIM_COLOR)
+        console.print(row, no_wrap=True, overflow="ellipsis")
     extra = len(body.splitlines()) - 20
     if extra > 0:
         console.print(Text(f"  …{extra} more", style=DIM_COLOR))
