@@ -112,6 +112,7 @@ _display_name = "GPT OSS 120B"
 _api_keys: dict[str, str] = {}
 _prove_enabled = False
 _plan_enabled = False
+_think_enabled = False
 _goal = None
 
 MODEL = _model
@@ -141,7 +142,7 @@ def _get_config_file():
 
 
 def _load_config():
-    global _model, _provider, _display_name, MODEL, _prove_enabled, _plan_enabled, _goal
+    global _model, _provider, _display_name, MODEL, _prove_enabled, _plan_enabled, _think_enabled, _goal
     path = _get_config_file()
     if not path.exists():
         return
@@ -185,6 +186,8 @@ def _load_config():
         _prove_enabled = data["prove_enabled"]
     if isinstance(data.get("plan_enabled"), bool):
         _plan_enabled = data["plan_enabled"]
+    if isinstance(data.get("think_enabled"), bool):
+        _think_enabled = data["think_enabled"]
     goal = data.get("goal")
     if isinstance(goal, dict) and isinstance(goal.get("objective"), str) and goal["objective"].strip():
         _goal = {"objective": goal["objective"].strip()[:500], "criteria": goal.get("criteria", "") if isinstance(goal.get("criteria"), str) else ""}
@@ -199,7 +202,7 @@ def _save_config():
         os.chmod(CONFIG_FILE.parent, 0o700)
     except OSError:
         pass
-    data = {"keys": dict(_api_keys), "provider": _provider, "model": _model, "display_name": _display_name, "prove_enabled": _prove_enabled, "plan_enabled": _plan_enabled, "goal": _goal}
+    data = {"keys": dict(_api_keys), "provider": _provider, "model": _model, "display_name": _display_name, "prove_enabled": _prove_enabled, "plan_enabled": _plan_enabled, "think_enabled": _think_enabled, "goal": _goal}
     tmp = None
     try:
         fd, tmp_path = tempfile.mkstemp(dir=str(CONFIG_FILE.parent))
@@ -318,6 +321,19 @@ def is_plan_enabled():
 def set_plan_enabled(enabled):
     global _plan_enabled
     _plan_enabled = bool(enabled)
+    try:
+        _save_config()
+    except OSError:
+        pass
+
+
+def is_think_enabled():
+    return _think_enabled
+
+
+def set_think_enabled(enabled):
+    global _think_enabled
+    _think_enabled = bool(enabled)
     try:
         _save_config()
     except OSError:

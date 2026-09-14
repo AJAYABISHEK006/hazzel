@@ -70,6 +70,7 @@ def _show_header(display_name, project_root):
 
 SLASH_COMMANDS = [
     {"name": "/model", "desc": "switch model / provider"},
+    {"name": "/think", "desc": "deeper reasoning on/off"},
     {"name": "/prove", "desc": "ephemeral smoke check on/off"},
     {"name": "/plan", "desc": "read-only plan mode on/off"},
     {"name": "/goal", "desc": "objective + run · criteria"},
@@ -496,6 +497,7 @@ def get_input(messages=None, prefill=""):
             _static_mid = ""
         try:
             _static_plan_bit = " · plan" if _cfg0.is_plan_enabled() else " · build"
+            _static_think_bit = " · think" if _cfg0.is_think_enabled() else ""
             _static_goal = _cfg0.get_goal() or {}
             _static_gtext = (_static_goal.get("objective") or "").strip()
             if len(_static_gtext) > 28:
@@ -507,6 +509,7 @@ def get_input(messages=None, prefill=""):
     except Exception:
         _static_mid = ""
         _static_plan_bit = ""
+        _static_think_bit = ""
         _static_goal_bit = ""
     try:
         from hazzel import agent as _agent0
@@ -588,10 +591,11 @@ def get_input(messages=None, prefill=""):
             lines.append(bar)
             _plan_bit = _static_plan_bit
             _goal_bit = _static_goal_bit
+            _think_bit = _static_think_bit
             if tok:
-                lines.append(f"  \x1b[2m{mid} · {tok}{_plan_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
+                lines.append(f"  \x1b[2m{mid} · {tok}{_plan_bit}{_think_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
             else:
-                lines.append(f"  \x1b[2m{mid}{_plan_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
+                lines.append(f"  \x1b[2m{mid}{_plan_bit}{_think_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
 
             nlines = _visual_rows(lines)
             out = "\r\n".join(lines)
@@ -874,19 +878,68 @@ _stream_started = None
 _stream_first_at = None
 _stream_tokens = 0
 _stream_last_paint = 0.0
+_reason_buffer: list[str] = []
+_thinking_streamed = False
+_thinking_was_live = False
 
 
 def begin_stream():
     global _stream_buffer, _stream_started, _stream_first_at, _stream_tokens, _stream_last_paint
+    global _reason_buffer, _thinking_streamed, _thinking_was_live
     _stream_buffer = ""
     _stream_started = time.monotonic()
     _stream_first_at = None
     _stream_tokens = 0
     _stream_last_paint = 0.0
+    _reason_buffer = []
+    _thinking_streamed = False
+    _thinking_was_live = False
+
+
+def push_reasoning_token(token):
+    global _reason_buffer, _thinking_streamed, _thinking_was_live, _stream_last_paint
+    if not token:
+        return
+    _reason_buffer.append(token)
+    _thinking_streamed = True
+    _thinking_was_live = True
+    now = time.monotonic()
+    if _loader is None:
+        return
+    if now - _stream_last_paint < 0.1:
+        return
+    _stream_last_paint = now
+    text = _render_reasoning("".join(_reason_buffer))
+    try:
+        _loader.update(_live_reasoning(text))
+    except OSError:
+        pass
+
+
+def _live_reasoning(text):
+    spinner = Spinner("dots", text=Text("thinking", style="dim italic"))
+    if not text:
+        return Renderables([spinner])
+    return Renderables([spinner, Text(text, style="dim")])
+
+
+def _render_reasoning(text, limit=600):
+    text = text.strip()
+    if not text:
+        return ""
+    rendered = " ".join(text.split())
+    if len(rendered) > limit:
+        rendered = rendered[: limit - 1].rstrip() + "…"
+    return rendered
+
+
+def was_thinking_streamed():
+    return _thinking_was_live
 
 
 def push_stream_token(token):
     global _stream_buffer, _stream_first_at, _stream_tokens, _stream_last_paint
+    global _thinking_streamed
     if not token:
         return
     now = time.monotonic()
@@ -894,6 +947,15 @@ def push_stream_token(token):
         _stream_first_at = now
     _stream_buffer += token
     _stream_tokens += 1
+    if _thinking_streamed:
+        _thinking_streamed = False
+        _reason_buffer[:] = []
+        if _loader is not None:
+            try:
+                _loader.update(_live_body(f"Working… · ttft {now - (_stream_started or now):.1f}s · {_stream_tokens} tokens"))
+                return
+            except OSError:
+                pass
     if _loader is None:
         return
     if now - _stream_last_paint < 0.4 and _stream_tokens % 25:
@@ -931,29 +993,6 @@ def end_turn():
     hide_loader()
 
 
-def _read_expand_key():
-    fd = sys.stdin.fileno()
-    try:
-        import select
-        import termios
-        import tty
-        old = termios.tcgetattr(fd)
-        try:
-            tty.setraw(fd)
-            termios.tcflush(fd, termios.TCIFLUSH)
-            ready, _, _ = select.select([fd], [], [], 30)
-            if not ready:
-                return False
-            return _read_key(fd) in ("\r", "\n")
-        finally:
-            try:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old)
-            except OSError:
-                pass
-    except (OSError, ImportError):
-        return False
-
-
 _quiet = False
 
 
@@ -983,17 +1022,16 @@ def show_hazzel_message(message):
 
 
 def show_reasoning(reasoning):
+    global _thinking_was_live
+    hide_loader()
+    if _thinking_was_live:
+        _thinking_was_live = False
+        return
     text = (reasoning or "").strip()
     if not text:
         return
-    if not sys.stdin.isatty():
-        console.print(Text(text, style="dim"))
-        console.print()
-        return
-    console.print(Text(f"  … thinking ({len(text.splitlines())} lines) — Enter to expand, any other key to skip", style="dim"))
-    if _read_expand_key():
-        console.print(Text(text, style="dim"))
-        console.print()
+    console.print(Text(text, style="dim"))
+    console.print()
 
 
 def _short_detail(detail: str, limit: int = 62) -> str:
@@ -1726,6 +1764,7 @@ _HELP_SECTIONS = [
     ]),
     ("Commands", [
         ("/model", "switch model & provider"),
+        ("/think", "deeper reasoning on/off"),
         ("/prove", "smoke check on/off"),
         ("/plan", "read-only plan, approve first"),
         ("/goal", "objective + acceptance"),

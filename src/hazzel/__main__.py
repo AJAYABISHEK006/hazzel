@@ -299,6 +299,25 @@ def main(argv=None):
             console.print(f"  Plan mode: {state} — read-only exploration; Hazzel proposes, you approve with /plan off.", style="dim")
             console.print()
             continue
+        parts_think = user_input.strip().lower().split()
+        if parts_think and parts_think[0] == "/think":
+            arg = parts_think[1] if len(parts_think) > 1 else ""
+            if arg in ("on", "enable", "true", "1"):
+                config.set_think_enabled(True)
+            elif arg in ("off", "disable", "false", "0"):
+                config.set_think_enabled(False)
+            elif arg in ("toggle", ""):
+                config.set_think_enabled(not config.is_think_enabled())
+            elif arg in ("status", "show"):
+                pass
+            else:
+                ui.show_error("Usage: /think on|off|toggle")
+                console.print()
+                continue
+            state = "on" if config.is_think_enabled() else "off"
+            console.print(f"  Think mode: {state} — model reasons step-by-step before answering; costs more tokens.", style="dim")
+            console.print()
+            continue
         if low_in == "goal" or low_in.startswith("/goal"):
             raw = user_input.strip()
             rest = (raw[5:].strip() if raw.startswith("/") else raw[4:].strip())
@@ -339,8 +358,8 @@ def main(argv=None):
                     _last_trace = []
                     _last_summary = None
                 _last_response = response
-                ui.show_hazzel_message(response)
                 ui.show_reasoning(agent.get_last_reasoning())
+                ui.show_hazzel_message(response)
                 continue
             if head in ("accept", "criteria", "ok"):
                 current = config.get_goal() or {}
@@ -435,8 +454,8 @@ def main(argv=None):
                 _last_trace = []
                 _last_summary = None
             _last_response = response
-            ui.show_hazzel_message(response)
             ui.show_reasoning(agent.get_last_reasoning())
+            ui.show_hazzel_message(response)
             continue
         if low_in == "init" or low_in.startswith("/init"):
             raw = user_input.strip()
@@ -526,8 +545,8 @@ def main(argv=None):
             _last_trace = []
             _last_summary = None
         _last_response = response
-        ui.show_hazzel_message(response)
         ui.show_reasoning(agent.get_last_reasoning())
+        ui.show_hazzel_message(response)
 
 
 if __name__ == "__main__":

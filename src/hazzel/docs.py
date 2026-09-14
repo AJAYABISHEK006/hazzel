@@ -25,7 +25,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
             "/model — switch provider/model   /help — quick overview   /docs — this guide",
             "/status /diff /review /commit /branch /log — git (/review @file, /review codebase, [--staged])   /push /pull /sync — remote sync",
             "/pr — list PRs, /pr view|diff|checks <n> — read, /pr comment|merge|close <n>, /pr create <title> — write",
-            "/plan on|off — read-only exploration   /prove on|off — smoke-check edits   /goal — objective, run it with /goal run",
+            "/plan on|off — read-only exploration   /prove on|off — smoke-check edits   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
             "/undo [n] — revert file changes   /retry — re-run last message",
             "/usage — token spend   /export [file] — save transcript   /copy [code] — copy reply",
             "/init [file] — project map   /clear — reset chat   /logout — wipe keys   /exit — quit",
@@ -57,10 +57,11 @@ SECTIONS: list[tuple[str, list[str]]] = [
         ],
     ),
     (
-        "Plan and prove modes",
+        "Plan, think and prove modes",
         [
             "/plan on makes Hazzel read-only: it explores and hands you a numbered plan, changing nothing until /plan off.",
             "/prove on smoke-checks Python edits in /tmp after each change, so you see pass/fail before trusting it.",
+            "/think on asks supported models to reason step-by-step before answering — costs more tokens, better on hard problems.",
         ],
     ),
     (

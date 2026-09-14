@@ -116,7 +116,8 @@ def test_agent_registers_skill_tool():
     assert "skill" in agent.PARALLEL_SAFE
     assert agent._normalize_tool_name("load_skill") == "skill"
     assert agent._normalize_tool_name("skills") == "skill"
-    assert "skill" in agent.SYSTEM_PROMPT
+    skill_schema = next(t for t in agent.TOOLS if t["function"]["name"] == "skill")
+    assert "skill" in skill_schema["function"]["description"].lower()
 
 
 def test_agent_run_tool_skill_lists(proj_skills):

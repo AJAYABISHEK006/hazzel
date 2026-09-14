@@ -73,9 +73,10 @@ class ChatResponse:
 
 def extract_reasoning(obj):
     try:
-        text = getattr(obj, "reasoning_content", None)
-        if isinstance(text, str) and text.strip():
-            return text
+        for attr in ("reasoning_content", "reasoning"):
+            text = getattr(obj, attr, None)
+            if isinstance(text, str) and text.strip():
+                return text
         parts = []
         for block in getattr(obj, "content", None) or []:
             if getattr(block, "type", None) in ("thinking", "redacted_thinking"):
@@ -88,11 +89,16 @@ def extract_reasoning(obj):
 
 class BaseProvider(ABC):
     @abstractmethod
-    def chat(self, messages, tools) -> ChatResponse:
+    def chat(self, messages, tools, think=False) -> ChatResponse:
         ...
 
-    def stream(self, messages, tools, on_token=None) -> ChatResponse:
-        response = self.chat(messages, tools)
+    def stream(self, messages, tools, on_token=None, think=False, on_reason=None) -> ChatResponse:
+        response = self.chat(messages, tools, think=think)
+        if on_reason and response.reasoning:
+            try:
+                on_reason(response.reasoning)
+            except Exception:
+                pass
         if on_token and response.content:
             try:
                 on_token(response.content)

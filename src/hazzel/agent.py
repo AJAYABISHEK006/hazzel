@@ -33,22 +33,44 @@ from hazzel.tools.run_command import run_command
 from hazzel.tools.search_files import missing_file_message, search_files
 from hazzel.tools.write_file import write_file
 
-SYSTEM_PROMPT = """You are Hazzel by Mukund Jha (providers supply only the model). Contact: mukundzha33@gmail.com.
-Senior eng agent: think, act, verify. Smallest correct change. Direct, concise, honest.
-Efficiency rules: search_files first, never re-read; batch independent reads in one block (they run in parallel); stop when done; one verify command max. @path files are pre-attached in context; use them, never re-read them.
-Package installs (pip/download): run `pip install <names>` via run_command immediately. Never edit pyproject.toml, requirements, or manifests to install something.
-Scope: respect user limits strictly. Do ONLY what was asked — nothing extra, nothing unasked.
-Prohibited unless explicitly requested: editing files the user didn't mention, installing/uninstalling packages, running commands, reformatting or refactoring unrelated code, creating docs/tests.
-Direct orders (install/read/create/run) execute immediately in one step — no exploration first. Vague tasks may explore, then act.
-Verify before claiming success.
-In your responses add proper spacing and formatting
-Tools: you have EXACTLY these 16 functions and no others: list_files, read_file, search_files, write_file, edit_file, apply_edits, run_command, git_status, git_diff, git_commit, git_branch, github_pr, web_search, fetch_url, review_diff, skill. Never call or invent any other tool (no namespaces, no dots, no repobrowser, no print_tree). To list a tree use list_files; to view content use read_file. For multi-file changes prefer one apply_edits call.
-Web: web_search then fetch_url is read-only — search first for docs, changelogs, and references, then fetch the best hits (one fetch_url call accepts up to 5 urls); never fetch secrets or keys. Always pass the user's question as query so only relevant sentences come back.
-Review: review_diff is read-only — call it when the user asks for a review; path takes a file (@file works), codebase=true reviews staged+unstaged together; it returns severity-ranked findings, never edits.
-Skills: a per-turn catalog of available skills is appended to this prompt when skills exist — when the task matches one, call skill(name) to load its instructions and follow them; call skill with no name to re-list.
-Goal: if a session goal is appended to the user message, steer every step toward it and briefly note progress. When the acceptance looks met, propose clearing the goal.
-Git: git_status/git_diff are read-only — call first before editing or committing. Commit only when asked, via git_commit (asks approval, shows diff). Never run raw `git commit/push/reset/clean` via run_command; use the git tools. Never run raw `gh pr create/merge/comment` via run_command; use github_pr.
-You are Hazzel, never ChatGPT/Claude/Gemini/DeepSeek/Grok/etc."""
+SYSTEM_PROMPT = """You are hazzel. A coding agent. You live in the terminal,
+you read code, you change code, you run things. That's it.
+
+PRINCIPLES
+- Read before you write. Always. If you haven't seen the file,
+  you don't know what you're editing.
+- Change the minimum. A bug fix is a bug fix, not a refactor.
+- If the codebase has a pattern, follow it. Even if you'd do it
+  differently. Consistency beats elegance in a shared repo.
+- When unsure, ask. One sharp question saves three wrong edits.
+
+TOOLS
+  read    — file contents
+  write   — new files or full rewrites
+  edit    — surgical replacements (old → new)
+  run     — shell commands (build, test, grep, git, anything)
+
+RULES
+- edit: match old text exactly. Small, unique blocks.
+  Batch edits to the same file into one call.
+- write: only for files that don't exist yet or need a full
+  rewrite. Never use it to "fix" a small section.
+- run: use for discovery (ls, find, grep, git log) as much as
+  for execution. Knowing the lay of the land is free.
+- Show file paths when you change them. The user should always
+  know what you touched.
+
+OUTPUT
+- Be brief. Explain what you did and why in one or two lines.
+  No preamble, no "Great question!", no restating the task.
+- If something is ambiguous, state your assumption in one line
+  and proceed. Don't block on it.
+- If you're about to do something destructive (delete, force-push,
+  drop a table), say so before doing it.
+
+CONTEXT
+- Date: <date>
+- CWD: <cwd>   """
 
 MAX_AGENTS_CHARS = 4000
 
@@ -553,9 +575,9 @@ def _format_contact_error(error):
     return f"Unable to contact the model: {error}"
 
 
-def _safe_chat(provider, task_messages, tools, retries=1):
+def _safe_chat(provider, task_messages, tools, retries=1, think=False):
     try:
-        response = provider.chat(task_messages, tools)
+        response = provider.chat(task_messages, tools, think=think)
     except Exception as error:
         if retries <= 0 or not _is_tool_validation_error(error):
             raise
@@ -574,7 +596,7 @@ def _safe_chat(provider, task_messages, tools, retries=1):
                 "role": "user",
                 "content": f"Final correction: answer directly with NO tool calls. Plain text only, valid tools were: {valid}.",
             })
-            response = provider.chat(task_messages, [])
+            response = provider.chat(task_messages, [], think=think)
         try:
             _record_usage(response, task_messages)
         except Exception:
@@ -605,11 +627,17 @@ def _normalize_response_tools(response):
     return response
 
 
-def _safe_stream_chat(provider, task_messages, tools):
+def _safe_stream_chat(provider, task_messages, tools, think=False):
     try:
         ui.begin_stream()
         try:
-            response = provider.stream(task_messages, tools, on_token=ui.push_stream_token)
+            response = provider.stream(
+                task_messages,
+                tools,
+                on_token=ui.push_stream_token,
+                think=think,
+                on_reason=ui.push_reasoning_token,
+            )
         finally:
             try:
                 ui.end_stream()
@@ -618,9 +646,12 @@ def _safe_stream_chat(provider, task_messages, tools):
     except KeyboardInterrupt:
         raise
     except Exception:
-        return _safe_chat(provider, task_messages, tools)
+        return _safe_chat(provider, task_messages, tools, think=think)
     _normalize_response_tools(response)
-    _note_reasoning(getattr(response, "reasoning", None))
+    if ui.was_thinking_streamed():
+        _note_reasoning(None)
+    else:
+        _note_reasoning(getattr(response, "reasoning", None))
     if getattr(response, "tool_calls", None):
         try:
             ui.show_loader("Working…")
@@ -1496,6 +1527,11 @@ def run(messages, user_input):
     _turn_reasoning.clear()
     _last_turn_usage.update({"input": 0, "output": 0, "cached": 0, "calls": 0, "estimated": False})
 
+    try:
+        think = bool(config.is_think_enabled())
+    except Exception:
+        think = False
+
     ui.begin_turn()
 
     fast = try_fast_path(messages, user_input)
@@ -1539,7 +1575,7 @@ def run(messages, user_input):
 
     try:
         provider = get_provider()
-        response = _safe_stream_chat(provider, task_messages, _active_tools())
+        response = _safe_stream_chat(provider, task_messages, _active_tools(), think=think)
         try:
             _record_usage(response, task_messages)
         except Exception:
@@ -1704,7 +1740,7 @@ def run(messages, user_input):
                     "content": "Stop calling tools. Answer now with NO tool calls, using only the context gathered so far.",
                 })
                 try:
-                    final = _safe_stream_chat(provider, task_messages, [])
+                    final = _safe_stream_chat(provider, task_messages, [], think=think)
                     _record_usage(final, task_messages)
                     content = (final.content or "").strip() or "Done."
                 except Exception:
@@ -1740,7 +1776,7 @@ def run(messages, user_input):
 
         _enforce_turn_budget(task_messages)
         try:
-            response = _safe_stream_chat(provider, task_messages, _active_tools())
+            response = _safe_stream_chat(provider, task_messages, _active_tools(), think=think)
             try:
                 _record_usage(response, task_messages)
             except Exception:

@@ -45,6 +45,7 @@ If you want the most feature-heavy agent, there are better options. If you want 
 - Run shell commands with approval and timeout, sandboxed to your project root. Read-only cmds (`ls`, `cat`, `git status`…) skip approval.
 - Plan mode (`/plan on`): read-only exploration. Hazzel proposes a numbered plan, changes nothing until you run `/plan off`.
 - Prove mode (`/prove on`): smoke-checks Python edits in `/tmp` before you trust them.
+- Think mode (`/think on`): lets supported models reason step-by-step before answering — costs more tokens, wins on hard edits.
 - Goal (`/goal`): pin an objective, run it with `/goal run`; every turn steers toward it until done.
 - Git-native: `/status`, `/diff` with file browser, `/review` with senior-level findings, `/commit` with suggested message, `/branch`, `/log`, `/push`, `/pull`, `/sync`. No `--force`, no `reset --hard` via shell.
 - GitHub PRs via `gh`: `/pr` lists open PRs, `/pr view|diff|checks <n>` reads, `/pr comment|merge|close <n>` and `/pr create <title>` write (approval first, plan-mode read-only). Needs `gh auth login`.

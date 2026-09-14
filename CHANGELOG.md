@@ -3,6 +3,19 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.1] - 2026-09-14
+### Added
+- `/think on|off|toggle|status`: extended thinking mode (Anthropic `thinking`, OpenAI `reasoning_effort`, Groq GPT-OSS only), persisted in config, `· think` indicator in the prompt bar, graceful fallback when the model rejects it.
+- Live thinking stream: reasoning tokens render dim in the loader while the model thinks, clear when the answer starts streaming, and are not re-printed after the turn.
+### Fixed
+- `extract_reasoning` now captures Groq's `reasoning` delta attribute alongside OpenAI's `reasoning_content` — GPT-OSS thinking was silently dropped.
+### Changed
+- `/init` generates a compact `AGENTS.md` template (Stack / Commands / Conventions / Layout / Gotchas / Don't) with inferred commands per stack (Node lockfile + scripts, Python, Cargo, Go) and top-level layout only — ~155 tokens vs ~600 before.
+- Slimmer system prompt: dropped the verbatim tool-name list and repeated per-tool rules (schemas + per-turn skill catalog already carry them).
+### Tests
+- New `tests/test_think.py` (9 tests): config round-trip/persistence, provider flag flow, `reasoning_effort` gating, rejection hints, both reasoning attributes, live-stream state machine.
+- `test_agent_registers_skill_tool` now asserts skill registration via the tool schema instead of prompt prose.
+
 ## [1.4.0] - 2026-09-14
 ### Changed
 - Republished 0.4.0 content under 1.x numbering so PyPI resolves it as latest (`pip install hazzel` now gets the skill system).

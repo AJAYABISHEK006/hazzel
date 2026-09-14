@@ -120,9 +120,3 @@ def test_safe_commands_posix(monkeypatch):
     _posix(monkeypatch)
     assert is_safe_command("ls") is True
     assert is_safe_command("dir") is False
-
-
-def test_expand_key_without_termios(monkeypatch):
-    monkeypatch.setitem(sys.modules, "termios", None)
-    monkeypatch.setattr(sys.stdin, "fileno", lambda: 0)
-    assert ui._read_expand_key() is False

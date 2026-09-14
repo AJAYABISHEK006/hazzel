@@ -26,7 +26,7 @@ class MistralProvider(BaseProvider):
         self.client = Mistral(api_key=api_key)
         self.model = model
 
-    def chat(self, messages, tools):
+    def chat(self, messages, tools, think=False):
         try:
             resp = call_with_backoff(
                 "Mistral",
@@ -69,7 +69,7 @@ class MistralProvider(BaseProvider):
             content = "".join(text_parts) if text_parts else None
         return ChatResponse(content=content, tool_calls=tool_calls, usage=_extract_usage(resp))
 
-    def stream(self, messages, tools, on_token=None):
+    def stream(self, messages, tools, on_token=None, think=False, on_reason=None):
         try:
             chunks = call_with_backoff(
                 "Mistral",
@@ -81,7 +81,7 @@ class MistralProvider(BaseProvider):
                 ),
             )
         except Exception:
-            return super().stream(messages, tools, on_token)
+            return super().stream(messages, tools, on_token, think=think, on_reason=on_reason)
         parts = []
         acc = {}
         usage = None

@@ -1,5 +1,21 @@
 from .base import BaseProvider, ChatResponse, ToolCall, Usage, call_with_backoff, extract_reasoning
 
+_REASONING_REJECTED_HINTS = (
+    "reasoning_effort",
+    "reasoning",
+    "not supported",
+    "unsupported",
+    "unknown parameter",
+    "invalid parameter",
+    "extra_forbidden",
+    "model does not support",
+)
+
+
+def _reasoning_rejected(text):
+    low = (text or "").lower()
+    return any(k in low for k in _REASONING_REJECTED_HINTS)
+
 
 def _extract_usage(resp):
     try:
@@ -35,7 +51,7 @@ class OpenAIProvider(BaseProvider):
         self.client = OpenAI(**kwargs)
         self.model = model
 
-    def _create_kwargs(self, messages, tools, stream=False):
+    def _create_kwargs(self, messages, tools, stream=False, think=False):
         kwargs = {
             "model": self.model,
             "messages": messages,
@@ -44,6 +60,8 @@ class OpenAIProvider(BaseProvider):
         }
         if self.provider_name in ("OpenAI", "OpenRouter"):
             kwargs["prompt_cache_key"] = "hazzel-v1"
+        if think and self.provider_name == "OpenAI":
+            kwargs["reasoning_effort"] = "high"
         if stream:
             kwargs["stream"] = True
             try:
@@ -60,16 +78,27 @@ class OpenAIProvider(BaseProvider):
             raise RuntimeError(f"Invalid model: {self.model}") from e
         raise RuntimeError(f"Unable to connect to {self.provider_name}: {e}") from e
 
-    def chat(self, messages, tools):
+    def chat(self, messages, tools, think=False):
         try:
             resp = call_with_backoff(
                 self.provider_name,
-                lambda: self.client.chat.completions.create(**self._create_kwargs(messages, tools)),
+                lambda: self.client.chat.completions.create(**self._create_kwargs(messages, tools, think=think)),
             )
         except RuntimeError:
             raise
         except Exception as e:
-            self._connect_error(e)
+            if think and self.provider_name == "OpenAI" and _reasoning_rejected(str(e)):
+                try:
+                    resp = call_with_backoff(
+                        self.provider_name,
+                        lambda: self.client.chat.completions.create(**self._create_kwargs(messages, tools, think=False)),
+                    )
+                except RuntimeError:
+                    raise
+                except Exception as fallback_error:
+                    self._connect_error(fallback_error)
+            else:
+                self._connect_error(e)
         choice = resp.choices[0].message
         tool_calls = []
         if getattr(choice, "tool_calls", None):
@@ -78,16 +107,25 @@ class OpenAIProvider(BaseProvider):
         content = getattr(choice, "content", None)
         return ChatResponse(content=content, tool_calls=tool_calls, usage=_extract_usage(resp), reasoning=extract_reasoning(choice))
 
-    def stream(self, messages, tools, on_token=None):
+    def stream(self, messages, tools, on_token=None, think=False, on_reason=None):
         try:
             chunks = call_with_backoff(
                 self.provider_name,
-                lambda: self.client.chat.completions.create(**self._create_kwargs(messages, tools, stream=True)),
+                lambda: self.client.chat.completions.create(**self._create_kwargs(messages, tools, stream=True, think=think)),
             )
-        except Exception:
-            return super().stream(messages, tools, on_token)
+        except Exception as first_error:
+            if think and _reasoning_rejected(str(first_error)):
+                try:
+                    chunks = call_with_backoff(
+                        self.provider_name,
+                        lambda: self.client.chat.completions.create(**self._create_kwargs(messages, tools, stream=True, think=False)),
+                    )
+                except Exception:
+                    return super().stream(messages, tools, on_token, think=False, on_reason=on_reason)
+            else:
+                return super().stream(messages, tools, on_token, think=think, on_reason=on_reason)
         parts = []
-        think = []
+        reason_parts = []
         acc = {}
         usage = None
         try:
@@ -106,7 +144,12 @@ class OpenAIProvider(BaseProvider):
                     continue
                 reason = extract_reasoning(delta)
                 if reason:
-                    think.append(reason)
+                    reason_parts.append(reason)
+                    if on_reason:
+                        try:
+                            on_reason(reason)
+                        except Exception:
+                            pass
                 text = getattr(delta, "content", None)
                 if text:
                     parts.append(text)
@@ -137,5 +180,5 @@ class OpenAIProvider(BaseProvider):
             entry = acc[idx]
             if entry["name"]:
                 tool_calls.append(ToolCall(id=entry["id"] or f"call_{idx}", name=entry["name"], arguments=entry["args"] or "{}"))
-        thinking = "".join(think).strip() or None
-        return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage, reasoning=thinking)
+        reasoning = "".join(reason_parts).strip() or None
+        return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage, reasoning=reasoning)

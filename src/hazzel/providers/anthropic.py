@@ -1,6 +1,9 @@
 import json
 from .base import BaseProvider, ChatResponse, ToolCall, Usage, call_with_backoff, extract_reasoning
 
+THINK_BUDGET_TOKENS = 4096
+THINK_MAX_TOKENS = 24000
+
 
 def _extract_usage(resp):
     try:
@@ -89,7 +92,15 @@ class AnthropicProvider(BaseProvider):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
 
-    def chat(self, messages, tools):
+    def _raise_connect_error(self, e):
+        msg = str(e).lower()
+        if "401" in msg or "auth" in msg or "api_key" in msg or "unauthorized" in msg:
+            raise RuntimeError("Unable to connect to Anthropic\n\nCheck your API key and try again.") from e
+        if "model" in msg and ("not found" in msg or "invalid" in msg):
+            raise RuntimeError(f"Invalid model: {self.model}") from e
+        raise RuntimeError(f"Unable to connect to Anthropic: {e}") from e
+
+    def chat(self, messages, tools, think=False):
         system, anth_messages = _messages_to_anthropic(messages)
         anth_tools = _openai_tools_to_anthropic(tools)
         kwargs = {
@@ -97,6 +108,9 @@ class AnthropicProvider(BaseProvider):
             "messages": anth_messages,
             "max_tokens": 10000,
         }
+        if think:
+            kwargs["thinking"] = {"type": "enabled", "budget_tokens": THINK_BUDGET_TOKENS}
+            kwargs["max_tokens"] = THINK_MAX_TOKENS
         if system:
             kwargs["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         if anth_tools:
@@ -106,12 +120,21 @@ class AnthropicProvider(BaseProvider):
         except RuntimeError:
             raise
         except Exception as e:
-            msg = str(e).lower()
-            if "401" in msg or "auth" in msg or "api_key" in msg or "unauthorized" in msg:
-                raise RuntimeError("Unable to connect to Anthropic\n\nCheck your API key and try again.") from e
-            if "model" in msg and ("not found" in msg or "invalid" in msg):
-                raise RuntimeError(f"Invalid model: {self.model}") from e
-            raise RuntimeError(f"Unable to connect to Anthropic: {e}") from e
+            if think:
+                text = str(e).lower()
+                if any(k in text for k in ("thinking", "budget_tokens", "not supported", "impossible", "invalid", "400")):
+                    kwargs.pop("thinking", None)
+                    kwargs["max_tokens"] = 10000
+                    try:
+                        resp = call_with_backoff("Anthropic", lambda: self.client.messages.create(**kwargs))
+                    except RuntimeError:
+                        raise
+                    except Exception as fallback_error:
+                        raise RuntimeError(f"Unable to connect to Anthropic: {fallback_error}") from fallback_error
+                else:
+                    self._raise_connect_error(e)
+            else:
+                self._raise_connect_error(e)
         content_text = ""
         tool_calls = []
         for block in getattr(resp, "content", []) or []:
@@ -124,7 +147,7 @@ class AnthropicProvider(BaseProvider):
                 tool_calls.append(ToolCall(id=getattr(block, "id", ""), name=getattr(block, "name", ""), arguments=args_json))
         return ChatResponse(content=content_text if content_text else None, tool_calls=tool_calls, usage=_extract_usage(resp), reasoning=extract_reasoning(resp))
 
-    def stream(self, messages, tools, on_token=None):
+    def stream(self, messages, tools, on_token=None, think=False, on_reason=None):
         system, anth_messages = _messages_to_anthropic(messages)
         anth_tools = _openai_tools_to_anthropic(tools)
         kwargs = {
@@ -133,16 +156,31 @@ class AnthropicProvider(BaseProvider):
             "max_tokens": 10000,
             "stream": True,
         }
+        if think:
+            kwargs["thinking"] = {"type": "enabled", "budget_tokens": THINK_BUDGET_TOKENS}
+            kwargs["max_tokens"] = THINK_MAX_TOKENS
         if system:
             kwargs["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
         if anth_tools:
             kwargs["tools"] = anth_tools
         try:
             events = call_with_backoff("Anthropic", lambda: self.client.messages.create(**kwargs))
-        except Exception:
-            return super().stream(messages, tools, on_token)
+        except Exception as e:
+            if think:
+                text = str(e).lower()
+                if any(k in text for k in ("thinking", "budget_tokens", "not supported", "impossible", "invalid", "400")):
+                    kwargs.pop("thinking", None)
+                    kwargs["max_tokens"] = 10000
+                    try:
+                        events = call_with_backoff("Anthropic", lambda: self.client.messages.create(**kwargs))
+                    except Exception:
+                        return super().stream(messages, tools, on_token, think=False, on_reason=on_reason)
+                else:
+                    return super().stream(messages, tools, on_token, think=True, on_reason=on_reason)
+            else:
+                return super().stream(messages, tools, on_token, think=False, on_reason=on_reason)
         parts = []
-        think = []
+        reason = []
         acc = {}
         usage = None
         try:
@@ -158,7 +196,14 @@ class AnthropicProvider(BaseProvider):
                     delta = getattr(event, "delta", None)
                     dtype = getattr(delta, "type", None) if delta is not None else None
                     if dtype == "thinking_delta":
-                        think.append(getattr(delta, "thinking", "") or "")
+                        frag = getattr(delta, "thinking", "") or ""
+                        if frag:
+                            reason.append(frag)
+                            if on_reason:
+                                try:
+                                    on_reason(frag)
+                                except Exception:
+                                    pass
                     elif dtype == "text_delta":
                         text = getattr(delta, "text", "") or ""
                         if text:
@@ -207,5 +252,5 @@ class AnthropicProvider(BaseProvider):
             entry = acc[idx]
             if entry["name"]:
                 tool_calls.append(ToolCall(id=entry["id"] or f"call_{idx}", name=entry["name"], arguments=entry["args"] or "{}"))
-        thinking = "".join(think).strip() or None
-        return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage, reasoning=thinking)
+        reasoning = "".join(reason).strip() or None
+        return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage, reasoning=reasoning)

@@ -11,14 +11,28 @@ def test_build_map_structure_and_stack(tmp_path):
     (tmp_path / "__pycache__").mkdir()
     out = build_map(tmp_path)
     assert "Python (pyproject)" in out
-    assert "src/" in out and "src/main.py" in out
+    assert "## Stack" in out
+    assert "## Commands" in out
+    assert "## Conventions" in out
+    assert "## Layout" in out
+    assert "## Gotchas" in out
+    assert "## Don't" in out
+    assert "src/" in out
     assert ".git" not in out and "__pycache__" not in out
     assert "`/init`" in out
 
 
+def test_build_map_commands_inferred(tmp_path):
+    (tmp_path / "pyproject.toml").write_text("[project]\n")
+    out = build_map(tmp_path)
+    assert "install: pip install -e ." in out
+    assert "test: pytest" in out
+
+
 def test_build_map_empty(tmp_path):
     out = build_map(tmp_path)
-    assert "unknown" in out and "(empty)" in out
+    assert "unknown" in out
+    assert "## Layout" in out
 
 
 def test_repo_instructions_are_included_in_system_prompt(tmp_path):

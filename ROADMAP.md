@@ -9,6 +9,6 @@ Must-have features tracked against competitors.
 | Local model support (Ollama) | One of Hazzel's stated values is BYOK — Ollama is the natural extension for offline/private use. | Shipped (keyless, `OLLAMA_HOST` override) |
 | MCP (Model Context Protocol) | Now the standard extension mechanism. Even a minimal stdio transport gets you access to the entire MCP server ecosystem. | Planned |
 | Parallel tool execution | Biggest speed win — run independent tool calls concurrently instead of sequentially. | Shipped (read-only batches run in ThreadPoolExecutor, writes stay sequential) |
-| Reasoning model pass-through (`/think` mode) | Surface model reasoning levels directly; let power models think harder on demand. | Planned |
+| Reasoning model pass-through (`/think` mode) | Surface model reasoning levels directly; let power models think harder on demand. | Shipped (`/think on` toggles extended thinking: Anthropic `thinking`, OpenAI + GPT-OSS `reasoning_effort`, with graceful fallback when unsupported) |
 
 Priority order: session persistence (still the #1 gap) → MCP support (even minimal stdio transport) → parallel tool execution → `/think` mode.

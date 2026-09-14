@@ -1,4 +1,5 @@
 from .base import BaseProvider, ChatResponse, ToolCall, Usage, call_with_backoff, extract_reasoning
+from .openai import _reasoning_rejected
 
 
 def _extract_usage(resp):
@@ -26,26 +27,49 @@ class GroqProvider(BaseProvider):
         self.model = model
         self.provider_name = "Groq"
 
-    def chat(self, messages, tools):
+    def _supports_reasoning(self):
+        return str(self.model).startswith("openai/gpt-oss")
+
+    def _raise_connect_error(self, e):
+        msg = str(e).lower()
+        if "401" in msg or "auth" in msg or "api_key" in msg or "unauthorized" in msg:
+            raise RuntimeError("Unable to connect to Groq\n\nCheck your API key and try again.") from e
+        if "model" in msg and ("not found" in msg or "invalid" in msg):
+            raise RuntimeError(f"Invalid model: {self.model}") from e
+        raise RuntimeError(f"Unable to connect to Groq: {e}") from e
+
+    def _chat_kwargs(self, messages, tools, think=False):
+        kwargs = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "max_tokens": 10000,
+        }
+        if think and self._supports_reasoning():
+            kwargs["reasoning_effort"] = "high"
+        return kwargs
+
+    def chat(self, messages, tools, think=False):
         try:
             resp = call_with_backoff(
                 self.provider_name,
-                lambda: self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    tools=tools,
-                    max_tokens=10000,
-                ),
+                lambda: self.client.chat.completions.create(**self._chat_kwargs(messages, tools, think=think)),
             )
         except RuntimeError:
             raise
         except Exception as e:
-            msg = str(e).lower()
-            if "401" in msg or "auth" in msg or "api_key" in msg or "unauthorized" in msg:
-                raise RuntimeError("Unable to connect to Groq\n\nCheck your API key and try again.") from e
-            if "model" in msg and ("not found" in msg or "invalid" in msg):
-                raise RuntimeError(f"Invalid model: {self.model}") from e
-            raise RuntimeError(f"Unable to connect to Groq: {e}") from e
+            if think and self._supports_reasoning() and _reasoning_rejected(str(e)):
+                try:
+                    resp = call_with_backoff(
+                        self.provider_name,
+                        lambda: self.client.chat.completions.create(**self._chat_kwargs(messages, tools, think=False)),
+                    )
+                except RuntimeError:
+                    raise
+                except Exception as fallback_error:
+                    self._raise_connect_error(fallback_error)
+            else:
+                self._raise_connect_error(e)
         choice = resp.choices[0].message
         tool_calls = []
         if getattr(choice, "tool_calls", None):
@@ -54,15 +78,10 @@ class GroqProvider(BaseProvider):
         content = getattr(choice, "content", None)
         return ChatResponse(content=content, tool_calls=tool_calls, usage=_extract_usage(resp), reasoning=extract_reasoning(choice))
 
-    def stream(self, messages, tools, on_token=None):
+    def stream(self, messages, tools, on_token=None, think=False, on_reason=None):
         def _open_stream(with_usage=True):
-            kwargs = {
-                "model": self.model,
-                "messages": messages,
-                "tools": tools,
-                "max_tokens": 10000,
-                "stream": True,
-            }
+            kwargs = dict(self._chat_kwargs(messages, tools, think=think))
+            kwargs["stream"] = True
             if with_usage:
                 kwargs["stream_options"] = {"include_usage": True}
             return self.client.chat.completions.create(**kwargs)
@@ -73,12 +92,20 @@ class GroqProvider(BaseProvider):
             except Exception as first_error:
                 if "stream_options" in str(first_error).lower():
                     chunks = call_with_backoff(self.provider_name, lambda: _open_stream(False))
+                elif think and self._supports_reasoning() and _reasoning_rejected(str(first_error)):
+                    chunks = call_with_backoff(
+                        self.provider_name,
+                        lambda: self.client.chat.completions.create(
+                            **self._chat_kwargs(messages, tools, think=False),
+                            stream=True,
+                        ),
+                    )
                 else:
                     raise
         except Exception:
-            return super().stream(messages, tools, on_token)
+            return super().stream(messages, tools, on_token, think=think, on_reason=on_reason)
         parts = []
-        think = []
+        reason_parts = []
         acc = {}
         usage = None
         try:
@@ -97,7 +124,12 @@ class GroqProvider(BaseProvider):
                     continue
                 reason = extract_reasoning(delta)
                 if reason:
-                    think.append(reason)
+                    reason_parts.append(reason)
+                    if on_reason:
+                        try:
+                            on_reason(reason)
+                        except Exception:
+                            pass
                 text = getattr(delta, "content", None)
                 if text:
                     parts.append(text)
@@ -128,5 +160,5 @@ class GroqProvider(BaseProvider):
             entry = acc[idx]
             if entry["name"]:
                 tool_calls.append(ToolCall(id=entry["id"] or f"call_{idx}", name=entry["name"], arguments=entry["args"] or "{}"))
-        thinking = "".join(think).strip() or None
-        return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage, reasoning=thinking)
+        reasoning = "".join(reason_parts).strip() or None
+        return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage, reasoning=reasoning)
