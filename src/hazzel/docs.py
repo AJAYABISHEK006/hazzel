@@ -23,8 +23,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
         "Slash commands",
         [
             "/model — switch provider/model   /help — quick overview   /docs — this guide",
-            "/status /diff /review /commit /branch /log — git (/review @file, /review codebase, [--staged])   /push /pull /sync — remote sync",
-            "/pr — list PRs, /pr view|diff|checks <n> — read, /pr comment|merge|close <n>, /pr create <title> — write",
+            "Run shell commands with ! or ask Hazzel to run them (approval first).",
             "/plan on|off — read-only exploration   /prove on|off — smoke-check edits   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
             "/undo [n] — revert file changes   /retry — re-run last message",
             "/usage — token spend   /export [file] — save transcript   /copy [code] — copy reply",
@@ -43,17 +42,16 @@ SECTIONS: list[tuple[str, list[str]]] = [
     (
         "Approvals and safety",
         [
-            "Edits show a diff first. Shell commands ask first (read-only ones like ls and git status skip the queue).",
-            "Destructive git (reset --hard, --force, raw gh pr writes) stays blocked — use the git/PR tools.",
+            "Edits show a diff first. Shell commands ask first (read-only ones like ls skip the queue).",
+            "Destructive commands stay blocked.",
             "Everything runs inside your project root. /undo restores any file change.",
         ],
     ),
     (
-        "Git and PR workflow",
+        "Shell workflow",
         [
-            "Typical flow: edit → /commit (drafts a message, y/e/n) → /push → /pr create 'title'.",
-            "Review with /pr view <n>, /pr diff <n>, /pr checks <n>; merge with /pr merge <n>, walk away with /pr close <n>.",
-            "Needs the gh CLI authenticated (gh auth login) for anything under /pr.",
+            "Typical flow: edit → run tests with !pytest -q → fix what fails.",
+            "Use your own shell for version control; Hazzel never touches it.",
         ],
     ),
     (
@@ -68,7 +66,6 @@ SECTIONS: list[tuple[str, list[str]]] = [
         "When something looks wrong",
         [
             "'Unable to contact the model' — key missing/invalid (/model to re-add) or rate-limited (wait, or switch model).",
-            "'gh is not authenticated' — run gh auth login in another terminal.",
             "Stuck or repeating? /clear for a fresh context, /retry to re-run, or split the task smaller.",
         ],
     ),

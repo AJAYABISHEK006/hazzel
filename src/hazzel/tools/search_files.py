@@ -163,14 +163,6 @@ def _py_search(compiled, root, pattern, path):
 
 def _name_index():
     try:
-        from ..git import ls_files
-
-        git_files = ls_files()
-        if git_files is not None:
-            return [(os.path.basename(p).lower(), p) for p in git_files]
-    except Exception:
-        pass
-    try:
         return [(os.path.basename(p).lower(), os.path.relpath(p, PROJECT_ROOT)) for p in _iter_files(PROJECT_ROOT)]
     except OSError:
         return []

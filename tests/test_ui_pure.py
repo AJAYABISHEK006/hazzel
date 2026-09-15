@@ -36,7 +36,7 @@ def test_docs_cover_core_workflows():
     from hazzel.docs import get_sections
 
     body = "\n".join(line for _, lines in get_sections() for line in lines)
-    for keyword in ("/model", "/pr", "/plan", "/prove", "/undo", "@", "gh auth login"):
+    for keyword in ("/model", "/plan", "/prove", "/undo", "@"):
         assert keyword in body
 
 
@@ -44,7 +44,7 @@ def test_show_docs_prints(capsys):
     ui.show_docs()
     out = capsys.readouterr().out
     assert "Hazzel docs" in out
-    assert "/pr" in out
+    assert "/plan" in out
 
 
 def test_clip_paste_normalizes_and_caps():
@@ -85,39 +85,14 @@ def test_mention_exact_still_first():
 
 
 def test_slash_prefix_and_substring():
-    names = [c["name"] for c in ui._filter_slash_commands("/sta")]
-    assert "/status" in names
-    names = [c["name"] for c in ui._filter_slash_commands("/ommit")]
-    assert "/commit" in names
+    names = [c["name"] for c in ui._filter_slash_commands("/mod")]
+    assert "/model" in names
+    names = [c["name"] for c in ui._filter_slash_commands("/odel")]
+    assert "/model" in names
 
 
 def test_slash_fuzzy_transpositions():
-    names = [c["name"] for c in ui._filter_slash_commands("/cmt")]
-    assert "/commit" in names
-    names = [c["name"] for c in ui._filter_slash_commands("/stus")]
-    assert "/status" in names
+    assert ui._filter_slash_commands("/mdl") == []
+    assert ui._filter_slash_commands("/stus") == []
     assert ui._filter_slash_commands("status") == []
     assert ui._filter_slash_commands("/zzzzzz") == []
-
-
-def test_pr_list_single_line_rows(capsys):
-    body = "1\tAdd AGENTS.md startup support\tmain\tronaldsterners\n2\tFix login redirect\tfix/auth\tjane"
-    ui.show_pr_list(body)
-    out = capsys.readouterr().out
-    assert "#1" in out and "Add AGENTS.md startup support" in out
-    assert "main" in out and "ronaldsterners" in out
-    assert "#2" in out and "Fix login redirect" in out
-
-
-def test_pr_list_never_folds_mid_word(capsys, monkeypatch):
-    monkeypatch.setattr(ui, "_term_width", lambda: 50)
-    body = "1\tAdd AGENTS.md startup support for the whole project\tmain\tronaldsterners"
-    ui.show_pr_list(body)
-    lines = [l for l in capsys.readouterr().out.splitlines() if "#1" in l]
-    assert len(lines) == 1
-    assert "startu" not in lines[0] or "startup" in lines[0]
-
-
-def test_pr_list_empty(capsys):
-    ui.show_pr_list("No open pull requests.")
-    assert "No open pull requests." in capsys.readouterr().out

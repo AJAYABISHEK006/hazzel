@@ -72,7 +72,7 @@ def test_persist_roundtrip(tmp_path, monkeypatch):
 
 def test_is_safe_allowlists():
     assert rc.is_safe_command("ls") is True
-    assert rc.is_safe_command("git status") is True
+    assert rc.is_safe_command("git status") is False
     assert rc.is_safe_command("git push") is False
     assert rc.is_safe_command("rm -rf /") is False
     assert rc.is_safe_command("echo hi | grep h") is False
@@ -125,15 +125,12 @@ def test_run_command_preapproved_echo():
 def test_plan_blocks_writes_and_allows_reads(monkeypatch):
     monkeypatch.setattr(config, "is_plan_enabled", lambda: True)
     assert agent.run_tool("apply_edits", {"edits": []}).startswith("Blocked: plan mode")
-    assert agent.run_tool("github_pr", {"action": "create", "title": "x"}).startswith("Blocked: plan mode")
-    assert agent.run_tool("git_branch", {"action": "switch", "name": "x"}).startswith("Blocked: plan mode")
-    assert "Blocked" not in agent.run_tool("github_pr", {"action": "view", "number": "1"})
+    assert agent.run_tool("run_command", {"command": "ls"}).startswith("Blocked: plan mode")
+    assert "Blocked" not in agent.run_tool("search_files", {"pattern": "x"})
     monkeypatch.setattr(config, "is_plan_enabled", lambda: False)
 
 
-def test_run_tool_blocks_raw_git():
-    out = agent.run_tool("run_command", {"command": "git push origin main"})
-    assert out.startswith("Blocked: use git_commit")
+def test_run_tool_passes_commands_through():
     with patch.object(rc.ui, "confirm", return_value=True):
         out = agent.run_tool("run_command", {"command": "ls"})
         assert "Blocked" not in out

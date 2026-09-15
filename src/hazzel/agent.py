@@ -21,14 +21,8 @@ from hazzel.tools.apply_edits import apply_edits
 from hazzel.tools.edit_file import edit_file
 from hazzel.tools.fetch_url import fetch_url
 from hazzel.tools.web_search import web_search
-from hazzel.tools.git_branch import git_branch
-from hazzel.tools.git_commit import git_commit
-from hazzel.tools.git_diff import git_diff
-from hazzel.tools.git_status import git_status
-from hazzel.tools.github_pr import github_pr
 from hazzel.tools.list_files import list_files
 from hazzel.tools.read_file import read_file
-from hazzel.tools.review_diff import review_diff
 from hazzel.tools.run_command import run_command
 from hazzel.tools.search_files import missing_file_message, search_files
 from hazzel.tools.write_file import write_file
@@ -48,14 +42,14 @@ TOOLS
   read    — file contents
   write   — new files or full rewrites
   edit    — surgical replacements (old → new)
-  run     — shell commands (build, test, grep, git, anything)
+  run     — shell commands (build, test, grep, anything)
 
 RULES
 - edit: match old text exactly. Small, unique blocks.
   Batch edits to the same file into one call.
 - write: only for files that don't exist yet or need a full
   rewrite. Never use it to "fix" a small section.
-- run: use for discovery (ls, find, grep, git log) as much as
+- run: use for discovery (ls, find, grep) as much as
   for execution. Knowing the lay of the land is free.
 - Show file paths when you change them. The user should always
   know what you touched.
@@ -169,55 +163,6 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "git_status",
-            "description": "Show git working-tree status (branch + porcelain). Read-only.",
-            "parameters": {"type": "object", "properties": {}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "git_diff",
-            "description": "Show git diff for unstaged or staged changes. Read-only.",
-            "parameters": {"type": "object", "properties": {"staged": {"type": "boolean"}, "path": {"type": "string"}}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "git_commit",
-            "description": "Commit changes. Omit message or pass 'suggest' to auto-draft from diff (asks y/e/n). Shows diff and asks approval. Use instead of raw git commit.",
-            "parameters": {"type": "object", "properties": {"message": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}}}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "git_branch",
-            "description": "Branches + sync: current, list, log, create, switch, push, pull, sync. Writes ask approval. Never use --force.",
-            "parameters": {"type": "object", "properties": {"action": {"type": "string"}, "name": {"type": "string"}}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "github_pr",
-            "description": "GitHub PRs via gh: list, view, diff, checks (read-only) and comment, create, merge, close (ask approval). Needs gh auth login.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "action": {"type": "string"},
-                    "number": {"type": "string"},
-                    "title": {"type": "string"},
-                    "body": {"type": "string"},
-                    "method": {"type": "string"},
-                },
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "web_search",
             "description": "Search the public web (no key). Read-only, returns up to count titles, URLs, and snippets. Then fetch the best hits with fetch_url.",
             "parameters": {"type": "object", "properties": {"query": {"type": "string"}, "count": {"type": "integer"}}, "required": ["query"]},
@@ -234,14 +179,6 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "review_diff",
-            "description": "Review git changes like a senior engineer: verdict plus severity-ranked findings with fixes. Read-only, never edits. Use staged=true for staged changes, path for one file, codebase=true for staged+unstaged together.",
-            "parameters": {"type": "object", "properties": {"staged": {"type": "boolean"}, "path": {"type": "string"}, "codebase": {"type": "boolean"}}},
-        },
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "skill",
             "description": "Load a skill's instructions (SKILL.md) into context and follow them. Read-only. Omit name to list available skills.",
             "parameters": {"type": "object", "properties": {"name": {"type": "string"}}},
@@ -249,9 +186,9 @@ TOOLS = [
     },
 ]
 
-TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "git_status", "git_diff", "git_commit", "git_branch", "github_pr", "web_search", "fetch_url", "review_diff", "skill"])
+TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "web_search", "fetch_url", "skill"])
 
-PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "git_status", "git_diff", "git_branch", "github_pr", "web_search", "fetch_url", "review_diff", "skill"])
+PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "web_search", "fetch_url", "skill"])
 
 PLAN_TOOLS = [t for t in TOOLS if t.get("function", {}).get("name") in PLAN_TOOL_NAMES]
 
@@ -276,42 +213,24 @@ def _active_tools():
 
 
 def _plan_blocked(tool_name, arguments):
-    if tool_name in ("write_file", "edit_file", "apply_edits", "run_command", "git_commit"):
+    if tool_name in ("write_file", "edit_file", "apply_edits", "run_command"):
         return True
-    if tool_name == "git_branch":
-        action = ""
-        if isinstance(arguments, dict):
-            action = str(arguments.get("action", "") or "current").lower()
-        return action not in ("current", "list", "log")
-    if tool_name == "github_pr":
-        action = ""
-        if isinstance(arguments, dict):
-            action = str(arguments.get("action", "") or "list").lower()
-        return action not in ("list", "view", "diff", "checks")
     return False
 
 
-PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "review_diff", "skill"})
+PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "web_search", "fetch_url", "skill"})
 PARALLEL_MAX_WORKERS = 8
 PARALLEL_TOOL_TIMEOUT = 60.0
 
 
 def _is_parallel_safe(tool_name, arguments):
-    if tool_name in PARALLEL_SAFE:
-        return True
-    if tool_name == "git_branch":
-        action = str((arguments or {}).get("action", "") or "current").lower()
-        return action in ("current", "list", "log")
-    if tool_name == "github_pr":
-        action = str((arguments or {}).get("action", "") or "list").lower()
-        return action in ("list", "view", "diff", "checks")
-    return False
+    return tool_name in PARALLEL_SAFE
 
 
 def _tool_detail(tool_name, arguments):
     detail = arguments.get(
         "pattern",
-        arguments.get("path", arguments.get("url", arguments.get("command", arguments.get("message", arguments.get("title", arguments.get("action", "")))))),
+        arguments.get("path", arguments.get("url", arguments.get("command", ""))),
     )
     if tool_name == "apply_edits" and isinstance(arguments, dict):
         paths = []
@@ -327,17 +246,13 @@ def _tool_detail(tool_name, arguments):
         targets = arguments.get("urls") or []
         if isinstance(targets, list) and targets:
             detail = ", ".join(str(t) for t in targets[:2])
-    if tool_name == "github_pr" and isinstance(arguments, dict):
-        sub = str(arguments.get("number", "") or "").strip() or str(arguments.get("title", "") or "").strip()
-        if sub:
-            detail = f"{arguments.get('action', 'list')} {sub}".strip()
     if tool_name == "skill" and isinstance(arguments, dict):
         detail = str(arguments.get("name", "") or "").strip()
     return detail
 
 
 def _tool_cache_key(tool_name, arguments, detail):
-    if tool_name in ("read_file", "list_files", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "review_diff", "skill"):
+    if tool_name in ("read_file", "list_files", "search_files", "web_search", "fetch_url", "skill"):
         return (tool_name, str(detail), str(arguments.get("offset", "")), str(arguments.get("limit", "")), str(arguments.get("pattern", "")))
     return None
 
@@ -372,11 +287,7 @@ def _finalize_result(result):
         "edits cancelled",
         "applied nothing",
         "write cancelled",
-        "commit cancelled",
-        "branch cancelled",
-        "pr cancelled",
         "blocked:",
-        "not a git repo",
     ))
     match = re.search(r"exit code (\d+)", low)
     exit_code = int(match.group(1)) if match else None
@@ -410,13 +321,6 @@ _TOOL_ALIASES = {
     "shell": "run_command",
     "exec": "run_command",
     "run": "run_command",
-    "status": "git_status",
-    "diff": "git_diff",
-    "commit": "git_commit",
-    "branch": "git_branch",
-    "pr": "github_pr",
-    "pull_request": "github_pr",
-    "pullrequest": "github_pr",
     "fetch": "fetch_url",
     "fetch_url": "fetch_url",
     "fetch_urls": "fetch_url",
@@ -429,11 +333,6 @@ _TOOL_ALIASES = {
     "search_web": "web_search",
     "google": "web_search",
     "ddg": "web_search",
-    "review": "review_diff",
-    "review_diff": "review_diff",
-    "code_review": "review_diff",
-    "codereview": "review_diff",
-    "critique": "review_diff",
     "skills": "skill",
     "load_skill": "skill",
     "loadskill": "skill",
@@ -499,15 +398,6 @@ def _coerce_tool_args(tool_name, arguments):
                     args["name"] = args[k]
                     break
         args.setdefault("name", "")
-    elif tool_name == "review_diff":
-        if "path" not in args:
-            for k in ("file", "filename", "filepath", "target"):
-                if args.get(k) is not None:
-                    args["path"] = args[k]
-                    break
-        args.setdefault("path", ".")
-        if "codebase" not in args and str(args.get("scope", "")).lower() in ("codebase", "all", "whole"):
-            args["codebase"] = True
     elif tool_name in ("write_file", "edit_file") and "path" not in args:
         for k in ("file", "filename", "filepath", "target"):
             if args.get(k) is not None:
@@ -544,12 +434,6 @@ def _coerce_tool_args(tool_name, arguments):
                 if args.get(k) is not None:
                     args["cwd"] = args[k]
                     break
-    elif tool_name == "github_pr":
-        for k in ("pr", "id", "target"):
-            if "number" not in args and args.get(k) is not None:
-                args["number"] = args[k]
-                break
-        args.setdefault("action", "list")
     return args
 
 
@@ -709,20 +593,7 @@ def run_tool(tool_name, arguments):
             return apply_edits(arguments["edits"])
         if tool_name == "run_command":
             cmd = arguments["command"]
-            low = str(cmd).strip().lower()
-            if low.startswith("git commit") or low.startswith("git push") or "reset --hard" in low or low.startswith("git clean"):
-                return "Blocked: use git_commit / git_branch tools instead of raw git writes. Destructive git (reset --hard, clean, --force) is disabled."
-            if "gh pr create" in low or "gh pr merge" in low or "gh pr comment" in low or "gh pr close" in low:
-                return "Blocked: use github_pr tool instead of raw `gh pr` writes."
             return run_command(cmd, timeout=arguments.get("timeout"), cwd=arguments.get("cwd"), description=arguments.get("description"))
-        if tool_name == "git_status":
-            return git_status()
-        if tool_name == "git_diff":
-            return git_diff(arguments.get("staged", False), arguments.get("path", ".") or ".")
-        if tool_name == "git_commit":
-            return git_commit(arguments.get("message"), arguments.get("files"))
-        if tool_name == "git_branch":
-            return git_branch(arguments.get("action", "current") or "current", arguments.get("name", "") or "")
         if tool_name == "web_search":
             query = arguments.get("query", "")
             if not query:
@@ -733,18 +604,8 @@ def run_tool(tool_name, arguments):
             return web_search(query, arguments.get("count", 5))
         if tool_name == "fetch_url":
             return fetch_url(arguments.get("url", ""), arguments.get("max_chars", 2000), arguments.get("query", ""), urls=arguments.get("urls"))
-        if tool_name == "review_diff":
-            return review_diff(arguments.get("staged", False), arguments.get("path", ".") or ".", arguments.get("codebase", False))
         if tool_name == "skill":
             return _skills.skill_tool(arguments.get("name", "") or "")
-        if tool_name == "github_pr":
-            return github_pr(
-                arguments.get("action", "list") or "list",
-                arguments.get("number", "") or "",
-                arguments.get("title", "") or "",
-                arguments.get("body", "") or "",
-                arguments.get("method", "squash") or "squash",
-            )
         return f"Unknown tool: {tool_name}. Valid tools: {', '.join(sorted(TOOL_NAMES))}."
     except KeyboardInterrupt:
         raise
@@ -776,7 +637,7 @@ def _build_summary_inner(trace, response_content, user_input):
         result = t["result"]
         if name == "read_file" and success and not t.get("cached"):
             inspected.append(detail)
-        elif name in ("list_files", "search_files", "git_status", "git_diff", "git_branch", "github_pr", "web_search", "fetch_url", "skill") and success and not t.get("cached"):
+        elif name in ("list_files", "search_files", "web_search", "fetch_url", "skill") and success and not t.get("cached"):
             inspected.append(detail or name)
         elif name == "write_file" and success:
             created.append(detail)
@@ -784,9 +645,6 @@ def _build_summary_inner(trace, response_content, user_input):
         elif name in ("edit_file", "apply_edits") and success:
             changed.append(detail)
             actions.append(f"{name} {detail}".strip())
-        elif name == "git_commit" and success:
-            actions.append(f"git_commit {detail}".strip())
-            changed.append(detail or "commit")
         elif name == "run_command":
             actions.append(f"run_command {detail}".strip())
             if detail.strip().startswith("prove ") or any(k in detail for k in ["pytest", "test", "build", "lint", "typecheck", "ruff", "mypy", "tsc", "npm", "cargo"]):
@@ -1450,29 +1308,12 @@ def try_fast_path(messages, user_input):
         if pkgs:
             return _fast_install(messages, user_input, pkgs)
 
-    if re.match(r"^(?:git\s+)?status[.!?]*$", low):
-        result = run_tool("git_status", {})
-        return _fast_reply(messages, user_input, str(result), _fast_trace("git_status", "status", str(result), True))
-    if re.match(r"^(?:git\s+)?diff(?:\s+staged)?[.!?]*$", low):
-        staged = "staged" in low
-        result = run_tool("git_diff", {"staged": staged})
-        return _fast_reply(messages, user_input, str(result), _fast_trace("git_diff", "staged" if staged else "", str(result), True))
-    if re.match(r"^(?:git\s+)?log(?:\s+\S+)?[.!?]*$", low):
-        result = run_tool("git_branch", {"action": "log"})
-        return _fast_reply(messages, user_input, str(result), _fast_trace("git_branch", "log", str(result), True))
-    if re.match(r"^(?:git\s+)?branch[.!?]*$", low):
-        result = run_tool("git_branch", {"action": "list"})
-        return _fast_reply(messages, user_input, str(result), _fast_trace("git_branch", "list", str(result), True))
-    if re.match(r"^(?:gh\s+)?pr\s+list[.!?]*$|^list\s+(open\s+)?(prs|pull requests)[.!?]*$", low):
-        result = run_tool("github_pr", {"action": "list"})
-        return _fast_reply(messages, user_input, str(result), _fast_trace("github_pr", "list", str(result), True))
-
     match = re.match(r"^(?:(?:now|please)\s+)?(?:run|execute)\s+(.+?)\s*$", text, re.IGNORECASE)
     if match:
         command = match.group(1).strip().rstrip(".!?")
         if command:
             first = command.split()[0].lower() if command.split() else ""
-            if first in ("python", "python3", "pytest", "pip", "npm", "npx", "node", "cargo", "go", "make", "git", "ls", "ruff"):
+            if first in ("python", "python3", "pytest", "pip", "npm", "npx", "node", "cargo", "go", "make", "ls", "ruff"):
                 return _fast_run(messages, user_input, command)
     return None
 
@@ -1719,7 +1560,7 @@ def run(messages, user_input):
 
         round_entries = trace[round_start:]
         sig = tuple(sorted((t.get("tool"), str(t.get("detail"))) for t in round_entries))
-        progressed = any(t.get("tool") in ("write_file", "edit_file", "apply_edits", "git_commit", "git_branch") and t.get("success") for t in round_entries)
+        progressed = any(t.get("tool") in ("write_file", "edit_file", "apply_edits") and t.get("success") for t in round_entries)
         if sig and sig == prev_sig and not progressed:
             stall_count += 1
         else:
@@ -1756,7 +1597,7 @@ def run(messages, user_input):
                 summary = _build_summary(trace, content, user_input)
                 return content, trace, summary
 
-        only_inspect = bool(round_entries) and all(t.get("tool") in ("list_files", "read_file", "search_files", "git_status", "git_diff") for t in round_entries)
+        only_inspect = bool(round_entries) and all(t.get("tool") in ("list_files", "read_file", "search_files") for t in round_entries)
         if only_inspect:
             inspect_streak += 1
         else:

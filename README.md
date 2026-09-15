@@ -8,7 +8,7 @@ A small terminal coding agent. Bring your own key.
 
 [![PyPI](https://img.shields.io/pypi/v/hazzel)](https://pypi.org/project/hazzel/) [![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://www.python.org/) [![License](https://img.shields.io/badge/license-AGPL--3.0--or--later-green)](LICENSE)
 
-Hazzel lives in your terminal. It reads code, edits files, runs commands, and works with git — always with your approval first.
+Hazzel lives in your terminal. It reads code, edits files, and runs commands — always with your approval first.
 
 ![Hazzel demo](assets/demo.gif)
 
@@ -34,7 +34,7 @@ Windows works too (PowerShell or cmd) — the full-screen menus gracefully fall 
 
 Most coding agents keep getting bigger. Hazzel stays small on purpose.
 
-The model suggests what to do. Hazzel decides whether and how to do it. Every mutation goes through you: file changes show a diff before they apply, shell commands ask first, and destructive git stays blocked.
+The model suggests what to do. Hazzel decides whether and how to do it. Every mutation goes through you: file changes show a diff before they apply, shell commands ask first, and destructive commands stay blocked.
 
 If you want the most feature-heavy agent, there are better options. If you want a terminal agent you can see through, that's Hazzel.
 
@@ -42,13 +42,11 @@ If you want the most feature-heavy agent, there are better options. If you want 
 
 - Read, search, and list your codebase. Tag files with `@path` to put them in context.
 - Create and edit files with diff preview and approval. Undo with `/undo`.
-- Run shell commands with approval and timeout, sandboxed to your project root. Read-only cmds (`ls`, `cat`, `git status`…) skip approval.
+- Run shell commands with approval and timeout, sandboxed to your project root. Read-only cmds (`ls`, `cat`…) skip approval.
 - Plan mode (`/plan on`): read-only exploration. Hazzel proposes a numbered plan, changes nothing until you run `/plan off`.
 - Prove mode (`/prove on`): smoke-checks Python edits in `/tmp` before you trust them.
 - Think mode (`/think on`): lets supported models reason step-by-step before answering — costs more tokens, wins on hard edits.
 - Goal (`/goal`): pin an objective, run it with `/goal run`; every turn steers toward it until done.
-- Git-native: `/status`, `/diff` with file browser, `/review` with senior-level findings, `/commit` with suggested message, `/branch`, `/log`, `/push`, `/pull`, `/sync`. No `--force`, no `reset --hard` via shell.
-- GitHub PRs via `gh`: `/pr` lists open PRs, `/pr view|diff|checks <n>` reads, `/pr comment|merge|close <n>` and `/pr create <title>` write (approval first, plan-mode read-only). Needs `gh auth login`.
 - Model thinking stays collapsed behind an Enter-to-expand prompt — peek only when curious.
 - Read the web: `fetch <url>` pulls public docs and references into context (read-only).
 - AGENTS.md support: Hazzel reads the repo-level `AGENTS.md` on startup and merges it into the system prompt so repo-specific instructions are always in context. Edits made mid-session take effect after `/clear` or a restart.

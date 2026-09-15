@@ -129,142 +129,6 @@ def main(argv=None):
             handle_model_command()
             continue
         low_in = user_input.strip().lower()
-        if low_in in ("/status", "status"):
-            from hazzel import git as _git
-            ok, out, branch = _git.status_porcelain()
-            if not ok:
-                ui.show_error(out)
-                continue
-            ui.show_git_status(branch, out)
-            continue
-        if low_in.startswith("/diff") or low_in == "diff":
-            staged = "--staged" in low_in or "staged" in low_in.split()
-            from hazzel import git as _git
-            ok, files, err = _git.changed_files(staged)
-            if not ok:
-                ui.show_error(err)
-                continue
-            branch = _git.branch_current()
-            if not files:
-                ui.show_git_file_list(files, staged, branch)
-                continue
-            if not sys.stdin.isatty():
-                ui.show_git_file_list(files, staged, branch)
-                for i, f in enumerate(files):
-                    dok, body = _git.diff_file(f["key"], staged)
-                    ui.show_git_file_diff(f["path"], body if dok else f"Diff failed: {body}", staged, f"{i + 1}/{len(files)} ")
-                continue
-            while True:
-                ui.show_git_file_list(files, staged, branch)
-                sel = ui.prompt_diff_selection(len(files))
-                if sel is None:
-                    break
-                if sel == "invalid":
-                    continue
-                f = files[sel]
-                dok, body = _git.diff_file(f["key"], staged)
-                ui.show_git_file_diff(f["path"], body if dok else f"Diff failed: {body}", staged, f"{sel + 1}/{len(files)} ")
-            continue
-        if low_in.startswith("/commit"):
-            msg = user_input.strip()[len("/commit"):].strip().strip("\"'")
-            from hazzel.tools.git_commit import git_commit as _gc
-            ui.show_git_commit(_gc(msg or None))
-            continue
-        if low_in.startswith("/branch") or low_in == "branch":
-            parts_b = user_input.strip().split()
-            from hazzel.tools.git_branch import git_branch as _gb
-            from hazzel import git as _git
-            if len(parts_b) == 1:
-                ok, out, cur = _git.branch_list()
-                if not ok:
-                    ui.show_error(out)
-                    continue
-                ui.show_git_branches(cur, out)
-            elif len(parts_b) >= 3 and parts_b[1].lower() in ("create", "new", "switch", "checkout"):
-                ui.show_git_commit(_gb(parts_b[1].lower() == "create" and "create" or "switch", " ".join(parts_b[2:])))
-            else:
-                ok, out, cur = _git.branch_list()
-                if not ok:
-                    ui.show_error(out)
-                    continue
-                ui.show_git_branches(cur, out)
-            continue
-        if low_in.startswith("/log") or low_in == "log":
-            parts_l = user_input.strip().split()
-            n = 10
-            if len(parts_l) > 1:
-                try:
-                    n = max(1, min(20, int(parts_l[1])))
-                except ValueError:
-                    n = 10
-            from hazzel import git as _git
-            ok, out = _git.log_entries(n)
-            if not ok:
-                ui.show_error(out)
-                continue
-            ui.show_git_log(out)
-            continue
-        if low_in == "review" or low_in.startswith("/review"):
-            raw = user_input.strip()
-            rest = (raw[7:].strip() if raw.startswith("/") else raw[6:].strip())
-            from hazzel.git_review import parse_review_args as _parse_review_args
-            staged, path, codebase = _parse_review_args(rest)
-            result = agent.run_tool("review_diff", {"staged": staged, "path": path, "codebase": codebase})
-            _last_response = result
-            if codebase:
-                scope = "whole codebase"
-            elif path != ".":
-                scope = path
-            else:
-                scope = "staged" if staged else "unstaged"
-            ui.show_review(result, scope)
-            continue
-        if low_in in ("/push", "push"):
-            from hazzel.tools.git_branch import git_branch as _gb
-            ui.show_git_commit(_gb("push"))
-            continue
-        if low_in in ("/pull", "pull"):
-            from hazzel.tools.git_branch import git_branch as _gb
-            ui.show_git_commit(_gb("pull"))
-            continue
-        if low_in in ("/sync", "sync"):
-            from hazzel.tools.git_branch import git_branch as _gb
-            ui.show_git_commit(_gb("sync"))
-            continue
-        if low_in == "/pr" or low_in.startswith("/pr ") or low_in == "pr":
-            from hazzel.tools.github_pr import github_pr as _pr
-            raw = user_input.strip()
-            rest = (raw[3:].strip() if raw.startswith("/") else raw[2:].strip())
-            parts = rest.split()
-            if not parts:
-                ui.show_pr_list(_pr("list"))
-                continue
-            sub = parts[0].lower()
-            if sub in ("list", "ls"):
-                ui.show_pr_list(_pr("list"))
-            elif sub in ("view", "show"):
-                ui.show_pr_view(_pr("view", parts[1] if len(parts) > 1 else ""))
-            elif sub == "diff":
-                ui.show_pr_view(_pr("diff", parts[1] if len(parts) > 1 else ""))
-            elif sub in ("checks", "check", "ci"):
-                ui.show_pr_checks(_pr("checks", parts[1] if len(parts) > 1 else ""))
-            elif sub == "create":
-                title = rest[len(parts[0]):].strip().strip("\"'")
-                ui.show_pr_result(_pr("create", title=title))
-            elif sub == "merge":
-                num = parts[1] if len(parts) > 1 and parts[1].lstrip("#").isdigit() else ""
-                ui.show_pr_result(_pr("merge", number=num))
-            elif sub == "close":
-                ui.show_pr_result(_pr("close", number=parts[1] if len(parts) > 1 else ""))
-            elif sub == "comment":
-                num = parts[1] if len(parts) > 1 else ""
-                cbody = rest.split(num, 1)[1].strip().strip("\"'") if num else ""
-                ui.show_pr_result(_pr("comment", number=num, body=cbody))
-            elif parts[0].lstrip("#").isdigit():
-                ui.show_pr_view(_pr("view", parts[0]))
-            else:
-                ui.show_pr_result(_pr("create", title=rest.strip().strip("\"'")))
-            continue
         parts_prove = user_input.strip().lower().split()
         if parts_prove and parts_prove[0] == "/prove":
             arg = parts_prove[1] if len(parts_prove) > 1 else ""
@@ -346,7 +210,7 @@ def main(argv=None):
                 except Exception as error:
                     ui.set_quiet(False)
                     ui.end_turn()
-                    ui.show_error(f"Turn failed ({error}). Nothing was committed; try again.")
+                    ui.show_error(f"Turn failed ({error}). Nothing was changed; try again.")
                     continue
                 ui.set_quiet(False)
                 if isinstance(result, tuple) and len(result) == 3:
@@ -442,7 +306,7 @@ def main(argv=None):
             except Exception as error:
                 ui.set_quiet(False)
                 ui.end_turn()
-                ui.show_error(f"Turn failed ({error}). Nothing was committed; try again.")
+                ui.show_error(f"Turn failed ({error}). Nothing was changed; try again.")
                 continue
             ui.set_quiet(False)
             if isinstance(result, tuple) and len(result) == 3:
@@ -533,7 +397,7 @@ def main(argv=None):
         except Exception as error:
             ui.set_quiet(False)
             ui.end_turn()
-            ui.show_error(f"Turn failed ({error}). Nothing was committed; try again.")
+            ui.show_error(f"Turn failed ({error}). Nothing was changed; try again.")
             continue
         ui.set_quiet(False)
         if isinstance(result, tuple) and len(result) == 3:

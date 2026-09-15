@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import textwrap
 import time
 
 from rich.console import Console
@@ -74,16 +73,6 @@ SLASH_COMMANDS = [
     {"name": "/prove", "desc": "ephemeral smoke check on/off"},
     {"name": "/plan", "desc": "read-only plan mode on/off"},
     {"name": "/goal", "desc": "objective + run · criteria"},
-    {"name": "/status", "desc": "git working-tree status"},
-    {"name": "/diff", "desc": "git diff preview"},
-    {"name": "/commit", "desc": "suggest + commit (approval)"},
-    {"name": "/review", "desc": "senior-level code review"},
-    {"name": "/branch", "desc": "list / switch branches"},
-    {"name": "/push", "desc": "push branch to remote"},
-    {"name": "/pull", "desc": "pull remote changes"},
-    {"name": "/sync", "desc": "pull then push"},
-    {"name": "/log", "desc": "recent commits"},
-    {"name": "/pr", "desc": "list / view / create PRs"},
     {"name": "/help", "desc": "show help"},
     {"name": "/docs", "desc": "full usage guide"},
     {"name": "/clear", "desc": "clear conversation + usage"},
@@ -174,29 +163,15 @@ def _all_project_files():
 
     skip = SKIP_DIRS | _MENTION_EXTRA_SKIP
     files = []
-    try:
-        from .git import ls_files
-
-        git_files = ls_files()
-    except Exception:
-        git_files = None
-    if git_files is not None:
-        for name in git_files:
-            if any(part in skip or part.endswith(".egg-info") for part in name.split("/")):
-                continue
-            files.append(name)
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in skip and not d.endswith(".egg-info")]
+        dirnames.sort()
+        for name in sorted(filenames):
+            files.append(os.path.relpath(os.path.join(dirpath, name), root))
             if len(files) >= _MENTION_FILE_CAP:
                 break
-    else:
-        for dirpath, dirnames, filenames in os.walk(root):
-            dirnames[:] = [d for d in dirnames if d not in skip and not d.endswith(".egg-info")]
-            dirnames.sort()
-            for name in sorted(filenames):
-                files.append(os.path.relpath(os.path.join(dirpath, name), root))
-                if len(files) >= _MENTION_FILE_CAP:
-                    break
-            if len(files) >= _MENTION_FILE_CAP:
-                break
+        if len(files) >= _MENTION_FILE_CAP:
+            break
     _file_cache.update({"root": root, "ts": now, "files": files})
     return files
 
@@ -364,24 +339,7 @@ def _filter_slash_commands(query):
     prefixed = [c for c in SLASH_COMMANDS if c["name"].startswith(q)]
     if prefixed:
         return prefixed
-    sub = [c for c in SLASH_COMMANDS if q in c["name"]]
-    if sub:
-        return sub
-    sq = q.lstrip("/").lstrip()
-    if not sq:
-        return list(SLASH_COMMANDS)
-    scored = []
-    for c in SLASH_COMMANDS:
-        name = c["name"].lstrip("/")
-        score = _fuzzy_score(sq, name)
-        if score is None:
-            desc_score = _fuzzy_score(sq, c.get("desc", ""))
-            if desc_score is None:
-                continue
-            score = desc_score + 30.0
-        scored.append((score, c["name"], c))
-    scored.sort(key=lambda item: (item[0], item[1]))
-    return [c for _, _, c in scored[:8]]
+    return [c for c in SLASH_COMMANDS if q.lstrip("/").lstrip() in c["name"]]
 
 
 def _win_redraw(buffer):
@@ -584,9 +542,9 @@ def get_input(messages=None, prefill=""):
                     name = c["name"].ljust(width)
                     desc = c["desc"]
                     if i == selected:
-                        lines.append(f"  \x1b[1m\x1b[97m\u276f\x1b[0m \x1b[1m\x1b[97m{name}\x1b[0m  \x1b[2m{desc}\x1b[0m")
+                        lines.append(f"  \x1b[1m\x1b[32m\u276f\x1b[0m \x1b[1m\x1b[97m{name}\x1b[0m  \x1b[2m{desc}\x1b[0m")
                     else:
-                        lines.append(f"    \x1b[2m{name}  {desc}\x1b[0m")
+                        lines.append(f"  \x1b[2m\x1b[90m\u276f\x1b[0m \x1b[2m\x1b[37m{name}\x1b[0m  \x1b[2m{desc}\x1b[0m")
                 lines.append(f"  \x1b[2m({selected + 1}/{total})\x1b[0m")
             lines.append(bar)
             _plan_bit = _static_plan_bit
@@ -1261,93 +1219,6 @@ def show_undo(restored):
     console.print()
 
 
-def show_git_status(branch, body):
-    rule()
-    title = Text()
-    title.append("  Git status", style="bold white")
-    title.append(f"  ·  {branch or 'HEAD'}", style=DIM_COLOR)
-    console.print(title)
-    if not body or body.strip() in ("(clean)", "Clean."):
-        console.print(Text("  Clean — nothing to commit.", style=SUCCESS_COLOR))
-    else:
-        table = Table(show_header=False, box=None, pad_edge=False, padding=(0, 1, 0, 0))
-        table.add_column(overflow="fold", width=4)
-        table.add_column(overflow="fold")
-        for line in body.splitlines()[:40]:
-            if line.startswith("## "):
-                continue
-            code = line[:2].strip() or "·"
-            rest = line[3:] if len(line) > 3 else line
-            color = SUCCESS_COLOR if "??" in line[:2] else USER_COLOR if line[:1].strip() else HAZZEL_COLOR
-            table.add_row(Text(code, style=f"bold {color}"), Text(rest.strip(), style="white"))
-        console.print(table)
-        extra = len(body.splitlines()) - 40
-        if extra > 0:
-            console.print(Text(f"  …{extra} more", style=DIM_COLOR))
-    rule()
-
-
-def show_git_diff(body, staged=False):
-    rule()
-    title = Text()
-    title.append("  Git diff", style="bold white")
-    title.append("  ·  staged" if staged else "  ·  unstaged", style=DIM_COLOR)
-    console.print(title)
-    if not body or body.strip() in ("No changes.", "(clean)"):
-        console.print(Text("  No changes.", style=DIM_COLOR))
-    else:
-        show_diff(body[:12000])
-    rule()
-
-
-def show_git_file_list(files, staged=False, branch=""):
-    from rich.panel import Panel
-
-    total_add = sum(f.get("added", 0) for f in files)
-    total_del = sum(f.get("deleted", 0) for f in files)
-    rule()
-    title = Text()
-    title.append(f"  Changed files  ·  {len(files)}", style="bold white")
-    title.append(f"  ·  +{total_add} −{total_del}", style=SUCCESS_COLOR)
-    title.append("  ·  staged" if staged else "  ·  unstaged", style=DIM_COLOR)
-    if branch:
-        title.append(f"  ·  {branch}", style=DIM_COLOR)
-    console.print(title)
-    if not files:
-        console.print(Text("  No changes.", style=DIM_COLOR))
-        rule()
-        return
-    table = Table(show_header=False, box=None, pad_edge=False, padding=(0, 1, 0, 0))
-    table.add_column(overflow="fold", width=4, justify="right")
-    table.add_column(overflow="fold", width=3)
-    table.add_column(overflow="fold", ratio=1)
-    table.add_column(overflow="fold", justify="right", width=8)
-    table.add_column(overflow="fold", justify="right", width=8)
-    icons = {"M": ("M", USER_COLOR), "A": ("A", SUCCESS_COLOR), "?": ("+", SUCCESS_COLOR),
-             "D": ("D", ERROR_COLOR), "R": ("R", HAZZEL_COLOR)}
-    for i, f in enumerate(files, 1):
-        letter, color = icons.get(f.get("status", "M"), ("M", USER_COLOR))
-        table.add_row(
-            Text(str(i), style=DIM_COLOR),
-            Text(letter, style=f"bold {color}"),
-            Text(f["path"], style="white"),
-            Text(f"+{f.get('added', 0)}", style=SUCCESS_COLOR),
-            Text(f"−{f.get('deleted', 0)}", style=ERROR_COLOR),
-        )
-    console.print(Panel(table, border_style="dim", padding=(0, 1)))
-    console.print(Text("  Enter number to open · q = close", style=DIM_COLOR))
-    rule()
-
-
-def show_git_file_diff(path, body, staged=False, position=""):
-    title = Text()
-    title.append(f"  ❯ {position}{path}" if position else f"  ❯ {path}", style="bold white")
-    title.append("  ·  staged" if staged else "  ·  unstaged", style=DIM_COLOR)
-    console.print(title)
-    show_diff(body)
-    console.print()
-
-
 def prompt_goal_criteria():
     was_active = _pause_loader()
     try:
@@ -1357,381 +1228,6 @@ def prompt_goal_criteria():
     finally:
         _resume_loader(was_active)
     return _ANSI_RE.sub("", answer or "").strip()
-
-
-def prompt_diff_selection(count):
-    was_active = _pause_loader()
-    try:
-        answer = input(f"  Open file [1-{count} / q]: ")
-    except (EOFError, KeyboardInterrupt):
-        return None
-    finally:
-        _resume_loader(was_active)
-    clean = _ANSI_RE.sub("", answer or "").strip().lower()
-    if not clean or clean in ("q", "quit", "exit", "n"):
-        return None
-    try:
-        n = int(clean)
-        if 1 <= n <= count:
-            return n - 1
-    except ValueError:
-        pass
-    return "invalid"
-
-
-def show_git_commit(result):
-    text = Text()
-    if "cancelled" in result.lower() or "nothing" in result.lower():
-        text.append("  ○ ", style=f"bold {DIM_COLOR}")
-        text.append(result, style="dim")
-    else:
-        text.append("  ✓ ", style=f"bold {SUCCESS_COLOR}")
-        text.append(result, style="bold white")
-    console.print(text)
-    console.print()
-
-
-def show_git_suggest(message, fallback=False):
-    rule()
-    title = Text()
-    title.append("  Suggested message", style="bold white")
-    if fallback:
-        title.append("  ·  offline draft", style=DIM_COLOR)
-    console.print(title)
-    row = Text()
-    row.append("  ❯ ", style=f"bold {HAZZEL_COLOR}")
-    row.append(message, style="bold white")
-    console.print(row)
-    console.print(Text("  [y] commit · [e] edit · [n] cancel", style=DIM_COLOR))
-    rule()
-
-
-def prompt_suggest_action():
-    was_active = _pause_loader()
-    try:
-        answer = input("  Accept? [y/e/n]: ")
-    except (EOFError, KeyboardInterrupt):
-        return "n"
-    finally:
-        _resume_loader(was_active)
-    clean = _ANSI_RE.sub("", answer or "").strip().lower()
-    if clean in ("y", "yes", ""):
-        return "y"
-    if clean in ("e", "edit"):
-        return "e"
-    return "n"
-
-
-def prompt_suggest_edit(initial):
-    was_active = _pause_loader()
-    try:
-        answer = input(f"  Message [{initial}]: ")
-    except (EOFError, KeyboardInterrupt):
-        return None
-    finally:
-        _resume_loader(was_active)
-    clean = _ANSI_RE.sub("", answer or "").strip()
-    return clean or initial
-
-
-def show_git_branches(current, body):
-    rule()
-    title = Text()
-    title.append("  Branches", style="bold white")
-    if current:
-        title.append(f"  ·  on {current}", style=DIM_COLOR)
-    console.print(title)
-    for line in (body or "").splitlines():
-        mark = line[:2]
-        name = line[2:].strip()
-        row = Text()
-        if mark.strip() == "*":
-            row.append("  ❯ ", style=f"bold {HAZZEL_COLOR}")
-            row.append(name, style="bold white")
-        else:
-            row.append("    ", style=DIM_COLOR)
-            row.append(name, style="dim")
-        console.print(row)
-    rule()
-
-
-def show_git_log(body):
-    rule()
-    console.print(Text("  Recent commits", style="bold white"))
-    for line in (body or "").splitlines()[:20]:
-        parts = line.split(" ", 1)
-        row = Text()
-        row.append("  ", style=DIM_COLOR)
-        row.append(parts[0] if parts else "", style=f"bold {USER_COLOR}")
-        if len(parts) > 1:
-            row.append(f"  {parts[1]}", style="white")
-        console.print(row)
-    rule()
-
-
-def show_pr_list(body):
-    rule()
-    console.print(Text("  Pull requests  ·  open", style="bold white"))
-    if not body or body.strip().lower() in ("no open pull requests.", "(clean)", "(empty)"):
-        console.print(Text("  No open pull requests.", style=DIM_COLOR))
-        rule()
-        return
-    width = _term_width()
-    for line in body.splitlines()[:20]:
-        parts = line.split("\t")
-        num = (parts[0].strip() if parts else "").lstrip("#")
-        title = parts[1].strip() if len(parts) > 1 else line.strip()
-        branch = parts[2].strip()[:24] if len(parts) > 2 else ""
-        author = parts[3].strip()[:20] if len(parts) > 3 else ""
-        num_text = f"#{num}" if num else "#?"
-        meta = "".join(f"  ·  {p}" for p in (branch, author) if p)
-        title_max = max(12, width - (2 + len(num_text) + 2) - len(meta) - 1)
-        if len(title) > title_max:
-            title = title[:title_max - 1].rstrip() + "…"
-        row = Text()
-        row.append("  ", style=DIM_COLOR)
-        row.append(num_text, style=f"bold {USER_COLOR}")
-        row.append(f"  {title}" if title else "", style="white")
-        if meta:
-            row.append(meta, style=DIM_COLOR)
-        console.print(row, no_wrap=True, overflow="ellipsis")
-    extra = len(body.splitlines()) - 20
-    if extra > 0:
-        console.print(Text(f"  …{extra} more", style=DIM_COLOR))
-    console.print(Text("  /pr view <n> · /pr diff <n> · /pr checks <n>", style=DIM_COLOR))
-    rule()
-
-
-def show_pr_view(body):
-    rule()
-    console.print(Text("  Pull request", style="bold white"))
-    if not body or body.strip() in ("(empty)", "(clean)"):
-        console.print(Text("  Not found.", style=DIM_COLOR))
-    else:
-        for line in body.splitlines()[:80]:
-            console.print(Text(f"  {line[:160]}", style="white" if line.strip() else DIM_COLOR))
-        if len(body.splitlines()) > 80:
-            console.print(Text(f"  …{len(body.splitlines()) - 80} more lines", style=DIM_COLOR))
-    rule()
-
-
-def show_pr_checks(body):
-    rule()
-    console.print(Text("  PR checks", style="bold white"))
-    if not body or body.strip() in ("(empty)", "(clean)", "No checks reported."):
-        console.print(Text("  No checks reported.", style=DIM_COLOR))
-    else:
-        for line in body.splitlines()[:30]:
-            low = line.lower()
-            if "pass" in low or "success" in low:
-                color = SUCCESS_COLOR
-            elif "fail" in low:
-                color = ERROR_COLOR
-            else:
-                color = "white"
-            console.print(Text(f"  {line[:140]}", style=color))
-    rule()
-
-
-def show_pr_result(result):
-    text = Text()
-    low = (result or "").lower()
-    if any(k in low for k in ("cancelled", "nothing", "not a git", "not installed", "not authenticated", "tool error", "invalid")):
-        text.append("  ○ ", style=f"bold {DIM_COLOR}")
-        text.append(result, style="dim")
-    else:
-        text.append("  ✓ ", style=f"bold {SUCCESS_COLOR}")
-        first = (result or "").strip().splitlines()[0][:160] if (result or "").strip() else "Done."
-        text.append(first, style="bold white")
-        rest = (result or "").strip().splitlines()[1:3]
-        for line in rest:
-            if line.strip().startswith("https://"):
-                console.print(text)
-                console.print(Text(f"  {line.strip()}", style=f"{USER_COLOR} underline"))
-                console.print()
-                return
-    console.print(text)
-    console.print()
-
-
-def show_pr_suggest(title, body="", fallback=False):
-    rule()
-    title_row = Text()
-    title_row.append("  Suggested PR", style="bold white")
-    if fallback:
-        title_row.append("  ·  offline draft", style=DIM_COLOR)
-    console.print(title_row)
-    row = Text()
-    row.append("  ❯ ", style=f"bold {HAZZEL_COLOR}")
-    row.append(title, style="bold white")
-    console.print(row)
-    if (body or "").strip():
-        console.print(Text(f"  {(body or '').strip().splitlines()[0][:120]}", style=DIM_COLOR))
-    console.print(Text("  [y] create · [e] edit · [n] cancel", style=DIM_COLOR))
-    rule()
-
-
-_REVIEW_SEVERITIES = ("Critical", "Major", "Minor", "Nit")
-
-_REVIEW_SEV_STYLE = {
-    "Critical": f"bold {ERROR_COLOR}",
-    "Major": "bold yellow",
-    "Minor": "yellow",
-    "Nit": DIM_COLOR,
-}
-
-
-def _parse_review(text):
-    verdict = ""
-    sections = []
-    good = ""
-    current = None
-    for raw in (text or "").splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        low = line.lower()
-        if low.startswith("verdict:"):
-            verdict = line[len("verdict:"):].strip()
-            current = None
-        elif low.startswith("good:"):
-            good = line[len("good:"):].strip()
-            current = "good"
-        elif low.startswith("findings:"):
-            current = None
-        else:
-            sev = None
-            for name in _REVIEW_SEVERITIES:
-                if low.startswith(f"[{name.lower()}]"):
-                    sev = name
-                    rest = line[len(name) + 2:].strip()
-                    break
-            if sev is not None:
-                current = []
-                sections.append((sev, current))
-                if rest:
-                    current.append(rest)
-            elif current == "good":
-                good += " " + line
-            elif isinstance(current, list):
-                current.append(line)
-    return verdict, sections, good
-
-
-_REVIEW_FILE_RE = re.compile(r"[A-Za-z0-9_\-./]+\.[A-Za-z0-9]+:\d+")
-_REVIEW_CODE_RE = re.compile(r"`[^`]+`")
-
-
-def _styled_spans(line, base):
-    row = Text()
-    marks = []
-    for match in _REVIEW_FILE_RE.finditer(line):
-        marks.append((match.start(), match.end(), f"bold {USER_COLOR}"))
-    for match in _REVIEW_CODE_RE.finditer(line):
-        marks.append((match.start(), match.end(), "bold white"))
-    prefix = re.match(r"\s*(\d+\.\s*)?", line)
-    off = prefix.end() if prefix else 0
-    if line[off:off + 4].lower() == "fix:":
-        marks.append((off, off + 4, f"bold {SUCCESS_COLOR}"))
-    marks.sort()
-    pos = 0
-    for start, end, style in marks:
-        if start > pos:
-            row.append(line[pos:start], style=base)
-        row.append(line[start:end], style=style)
-        pos = max(pos, end)
-    row.append(line[pos:], style=base)
-    return row
-
-
-def _term_width():
-    try:
-        return max(40, _hw())
-    except Exception:
-        return 80
-
-
-def _render_finding(line, num, dim=False):
-    base = DIM_COLOR if dim else "white"
-    rows = textwrap.wrap(
-        line,
-        width=_term_width(),
-        initial_indent=f"    {num}. ",
-        subsequent_indent="       ",
-        break_long_words=False,
-        break_on_hyphens=False,
-    ) or [f"    {num}. "]
-    out = []
-    for i, row_text in enumerate(rows):
-        text = _styled_spans(row_text, base)
-        if i > 0:
-            plain = Text("       ", style=DIM_COLOR)
-            plain.append_text(text)
-            text = plain
-        out.append(text)
-    return out
-
-
-def _render_wrapped(line, indent="    ", dim=True):
-    base = DIM_COLOR if dim else "white"
-    rows = textwrap.wrap(
-        line,
-        width=_term_width(),
-        initial_indent=indent,
-        subsequent_indent=indent,
-        break_long_words=False,
-        break_on_hyphens=False,
-    ) or [indent.rstrip()]
-    return [_styled_spans(row_text, base) for row_text in rows]
-
-
-def show_review(result, scope=""):
-    verdict, sections, good = _parse_review(result or "")
-    if not verdict and not sections:
-        console.print(Text(result or "(empty review)", style="white"))
-        console.print()
-        return
-    total = sum(len(lines) for _, lines in sections)
-    head = Text()
-    head.append("  Code review", style="bold white")
-    if scope:
-        head.append(f"  ·  {scope}", style=DIM_COLOR)
-    if total:
-        head.append(f"  ·  {total} finding{'s' if total != 1 else ''}", style=DIM_COLOR)
-    reason = ""
-    if verdict:
-        status, sep, extra = verdict.partition("—")
-        if not sep:
-            status, sep, extra = verdict.partition(" - ")
-        bad = "request changes" in status.lower()
-        color = ERROR_COLOR if bad else SUCCESS_COLOR
-        head.append("  ·  ", style=DIM_COLOR)
-        head.append("✗ " if bad else "✓ ", style=f"bold {color}")
-        head.append(status.strip(), style=f"bold {color}")
-        reason = extra.strip()
-    console.print(head)
-    if reason:
-        for row in _render_wrapped(reason, indent="      ", dim=False):
-            console.print(row)
-    rule()
-    for sev, lines in sections:
-        console.print()
-        console.print(Text(f"  [{sev}]", style=_REVIEW_SEV_STYLE[sev]))
-        for num, line in enumerate(lines, 1):
-            for row in _render_finding(line, num, dim=(sev == "Nit")):
-                console.print(row)
-    if good:
-        console.print()
-        console.print(Text("  ✓ Good", style=f"bold {SUCCESS_COLOR}"))
-        for row in _render_wrapped(good):
-            console.print(row)
-    console.print()
-    if total:
-        next_step = "  Fix findings, re-run /review, then /commit."
-    else:
-        next_step = "  Clean — /commit when ready."
-    console.print(Text(next_step, style=DIM_COLOR))
-    rule()
 
 
 def show_model_selected(display_name, provider_display):
@@ -1781,18 +1277,6 @@ _HELP_SECTIONS = [
         ("/undo", "undo last file change"),
         ("/logout", "clear saved API keys"),
         ("/exit", "quit"),
-    ]),
-    ("Git", [
-        ("/status", "working-tree status"),
-        ("/diff", "changed files + full diff [--staged]"),
-        ("/commit", "suggest message + approval"),
-        ("/review", "senior review [@file|codebase] [--staged]"),
-        ("/branch", "list / create / switch"),
-        ("/push", "push branch to remote"),
-        ("/pull", "pull remote changes"),
-        ("/sync", "pull then push"),
-        ("/log", "recent commits"),
-        ("/pr", "list / view / checks / create / merge / close"),
     ]),
 ]
 
