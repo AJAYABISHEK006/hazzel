@@ -3,6 +3,12 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.2] - 2026-09-15
+### Changed
+- Header stacks project path under the version line instead of sharing one row.
+- Dividers use live terminal width full-bleed so prompt, echo, and reply rules match.
+- `/` palette shows the cursor only on the highlighted row.
+
 ## [1.4.1] - 2026-09-14
 ### Added
 - `/think on|off|toggle|status`: extended thinking mode (Anthropic `thinking`, OpenAI `reasoning_effort`, Groq GPT-OSS only), persisted in config, `· think` indicator in the prompt bar, graceful fallback when the model rejects it.
