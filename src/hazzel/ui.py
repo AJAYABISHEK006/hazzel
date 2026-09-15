@@ -18,12 +18,12 @@ console = Console()
 
 _loader = None
 
-HAZZEL_COLOR = "#FA0002"
+HAZZEL_COLOR = "white"
 USER_COLOR = "#8ab4f8"
 
-TOOL_COLOR = "#c4c7c5"
-SUCCESS_COLOR = "#9ece6a"
-ERROR_COLOR = "#f7768e"
+TOOL_COLOR = "dim"
+SUCCESS_COLOR = "#8fb08f"
+ERROR_COLOR = "#c9a3a3"
 
 DIM_COLOR = "dim"
 
@@ -36,7 +36,13 @@ def show_welcome(model, project_root):
 
 def _hw():
     try:
-        return max(30, int(console.width))
+        import shutil
+
+        return max(20, int(shutil.get_terminal_size(fallback=(80, 24)).columns))
+    except Exception:
+        pass
+    try:
+        return max(20, int(console.width))
     except Exception:
         return 80
 
@@ -59,12 +65,10 @@ def _show_header(display_name, project_root):
         except Exception:
             _ver = "1.3.2"
     title = Text()
-    title.append("Hazzel", style=f"bold {HAZZEL_COLOR}")
+    title.append("hazzel", style=HAZZEL_COLOR)
     title.append(f" {_ver}", style=DIM_COLOR)
     console.print(title)
-    path = Text()
-    path.append(_short_path(project_root), style=DIM_COLOR)
-    console.print(path)
+    console.print(Text(_short_path(project_root), style=DIM_COLOR))
 
 
 SLASH_COMMANDS = [
@@ -299,7 +303,7 @@ def _clip_paste(paste):
     return text[:MAX_PASTE_CHARS]
 
 
-MENTION_COLOR = "\x1b[1;94m"
+MENTION_COLOR = "\x1b[94m"
 MENTION_RESET = "\x1b[0m"
 
 
@@ -544,7 +548,7 @@ def get_input(messages=None, prefill=""):
                     if i == selected:
                         lines.append(f"  \x1b[1m\x1b[32m\u276f\x1b[0m \x1b[1m\x1b[97m{name}\x1b[0m  \x1b[2m{desc}\x1b[0m")
                     else:
-                        lines.append(f"  \x1b[2m\x1b[90m\u276f\x1b[0m \x1b[2m\x1b[37m{name}\x1b[0m  \x1b[2m{desc}\x1b[0m")
+                        lines.append(f"    \x1b[2m\x1b[37m{name}\x1b[0m  \x1b[2m{desc}\x1b[0m")
                 lines.append(f"  \x1b[2m({selected + 1}/{total})\x1b[0m")
             lines.append(bar)
             _plan_bit = _static_plan_bit
@@ -1088,8 +1092,8 @@ def _format_elapsed(seconds):
 def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, elapsed=None):
     if _quiet:
         return
-    icon = "●" if success else "✗"
-    color = SUCCESS_COLOR if success else ERROR_COLOR
+    icon = "·" if success else "!"
+    color = DIM_COLOR if success else ERROR_COLOR
     limit = 45 if exit_code is not None else 62
     text = Text()
     text.append("  ", style=DIM_COLOR)
@@ -1097,8 +1101,8 @@ def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, 
         text.append(f"{icon} ", style=DIM_COLOR)
         text.append(str(tool_name).ljust(12), style=DIM_COLOR)
     else:
-        text.append(f"{icon} ", style=f"bold {color}")
-        text.append(str(tool_name).ljust(12), style="bold")
+        text.append(f"{icon} ", style=color)
+        text.append(str(tool_name).ljust(12), style="white" if success else color)
     short = _short_detail(_relativize_detail(detail), limit=limit)
     if short:
         text.append(f" {short}", style=DIM_COLOR)
@@ -1119,18 +1123,15 @@ def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, 
 
 
 def show_user_command(command):
-    bar = Text("─" * _hw(), style="dim")
-    console.print(bar)
     text = Text()
     text.append("❯ ", style="dim")
     text.append(command.strip(), style="white")
     console.print(text)
-    console.print(bar)
 
 
 def show_error(message):
     text = Text()
-    text.append("  ✗ ", style=f"bold {ERROR_COLOR}")
+    text.append("  ! ", style=ERROR_COLOR)
     text.append(message, style=ERROR_COLOR)
     console.print(text)
 
@@ -1152,12 +1153,12 @@ def confirm_prove(files, action):
     try:
         console.print()
         head = Text()
-        head.append("  ◈ Prove", style="bold white")
+        head.append("  prove", style="white")
         head.append(f"  ·  {action}", style=DIM_COLOR)
         console.print(head)
         for f in (files or [])[:5]:
             row = Text()
-            row.append("  ❯ ", style=f"bold {HAZZEL_COLOR}")
+            row.append("  ❯ ", style=DIM_COLOR)
             row.append(str(f), style="white")
             console.print(row)
         extra = len(files or []) - 5
@@ -1212,8 +1213,8 @@ def show_undo(restored):
         return
     for key, action in restored:
         text = Text()
-        text.append("  ✓ ", style=f"bold {SUCCESS_COLOR}")
-        text.append(f"{action} ", style="bold white")
+        text.append("  ✓ ", style=SUCCESS_COLOR)
+        text.append(f"{action} ", style="white")
         text.append(_short_detail(key), style=DIM_COLOR)
         console.print(text)
     console.print()
@@ -1232,8 +1233,8 @@ def prompt_goal_criteria():
 
 def show_model_selected(display_name, provider_display):
     text = Text()
-    text.append("  ✓ ", style=f"bold {SUCCESS_COLOR}")
-    text.append(display_name, style="bold white")
+    text.append("  ✓ ", style=SUCCESS_COLOR)
+    text.append(display_name, style="white")
     text.append(f" ({provider_display})", style=DIM_COLOR)
     console.print(text)
     console.print()
@@ -1241,7 +1242,7 @@ def show_model_selected(display_name, provider_display):
 
 def show_cleared():
     text = Text()
-    text.append("  ○ ", style=f"bold {DIM_COLOR}")
+    text.append("  ○ ", style=DIM_COLOR)
     text.append("Conversation cleared", style="dim")
     console.print(text)
     console.print()
@@ -1299,7 +1300,7 @@ def _help_table(rows):
         cells = []
         for j in range(ncols):
             cell = row[j] if j < len(row) else ""
-            cells.append(Text(cell, style=("bold white" if j % 2 == 0 else "dim")))
+            cells.append(Text(cell, style=("white" if j % 2 == 0 else "dim")))
         table.add_row(*cells)
     return table
 
@@ -1314,14 +1315,14 @@ def _doc_line(line):
         if not part:
             continue
         if part.startswith("`") and part.endswith("`") and len(part) > 2:
-            text.append(part[1:-1], style="bold white")
+            text.append(part[1:-1], style="white")
             continue
         pos = 0
         for m in re.finditer(r"/[a-z]+|@\S+", part):
             if m.start() > pos:
                 text.append(part[pos:m.start()], style="dim" if i == 0 and m.start() == 0 else "white")
             tok = m.group(0)
-            text.append(tok, style=f"bold {HAZZEL_COLOR}" if tok.startswith("/") else f"bold {USER_COLOR}")
+            text.append(tok, style="white" if tok.startswith("/") else USER_COLOR)
             pos = m.end()
         text.append(part[pos:], style="white" if pos else ("dim" if line.startswith("/") else "white"))
     return text
@@ -1333,7 +1334,7 @@ def show_docs():
     sections = get_sections()
     rule()
     head = Text()
-    head.append("  Hazzel docs", style="bold white")
+    head.append("  Hazzel docs", style="white")
     head.append(f"  ·  {len(sections)} sections", style=DIM_COLOR)
     console.print(head)
     rule()
@@ -1341,7 +1342,7 @@ def show_docs():
         console.print()
         sec = Text()
         sec.append(f"  {i + 1:02d}  ", style=DIM_COLOR)
-        sec.append(title, style="bold white")
+        sec.append(title, style="white")
         console.print(sec)
         for line in lines:
             row = Text()
@@ -1354,10 +1355,10 @@ def show_docs():
 
 def _print_help_inline():
     console.print()
-    console.print(Text(_HELP_INTRO, style="bold white"))
+    console.print(Text(_HELP_INTRO, style="white"))
     for title, rows in _HELP_SECTIONS:
         console.print()
-        console.print(Text(title, style="bold white"))
+        console.print(Text(title.lower(), style="dim"))
         console.print(_help_table(rows))
     console.print()
     console.print(Text(_HELP_FOOT, style="dim"))
@@ -1381,15 +1382,15 @@ def _show_help_tab():
             termios.tcsetattr(fd, termios.TCSANOW, attrs)
             termios.tcflush(fd, termios.TCIFLUSH)
             console.print()
-            console.print(Text(_HELP_INTRO, style="bold white"))
+            console.print(Text(_HELP_INTRO, style="white"))
             for title, rows in _HELP_SECTIONS:
                 console.print()
-                console.print(Text(title, style="bold white"))
+                console.print(Text(title.lower(), style="dim"))
                 console.print(_help_table(rows))
             console.print()
             console.print(Text(_HELP_FOOT, style="dim"))
             console.print()
-            console.print(Text("Esc to cancel", style="dim"))
+            console.print(Text("esc to cancel", style="dim"))
             console.print()
             sys.stdout.flush()
             while True:
@@ -1435,52 +1436,48 @@ def _usage_body(session, last=None, context=None):
     total = sent + received
 
     header = Text()
-    header.append("◈ ", style=f"bold {HAZZEL_COLOR}")
-    header.append("USAGE", style="bold white")
-    header.append("   tokens used this conversation", style="dim")
+    header.append("usage", style="white")
+    header.append("  ·  tokens used this conversation", style="dim")
     yield header
     yield Text("")
 
     if not calls:
-        yield Panel(
-            Align.center(Text("No usage yet\nAsk Hazzel to read, edit, or run something.", style="dim", justify="center")),
-            border_style="dim",
-            padding=(1, 4),
-        )
+        yield Text("  No usage yet — ask Hazzel to read, edit, or run something.", style="dim")
         return
 
-    hero = Text(justify="center")
-    hero.append(f"{total:,}", style="bold white")
+    hero = Text()
+    hero.append("  ", style="dim")
+    hero.append(f"{total:,}", style="white")
     hero.append(f"  tokens · {calls} call{'s' if calls != 1 else ''}", style="dim")
-    yield Panel(Align.center(hero), border_style="dim", padding=(1, 4))
+    yield hero
     if context:
         try:
-            ctx = Text(justify="center")
-            ctx.append("◈ context  ", style="dim")
-            ctx.append(format_context_plain(context[0], context[1]), style="bold white")
+            ctx = Text()
+            ctx.append("  context  ", style="dim")
+            ctx.append(format_context_plain(context[0], context[1]), style="white")
             yield ctx
-            yield Text("")
         except Exception:
             pass
+    yield Text("")
 
     table = Table.grid(padding=(0, 2))
     table.add_column(justify="right", style="dim", width=10)
-    table.add_column(justify="right", style="bold white", width=10)
+    table.add_column(justify="right", style="white", width=10)
     table.add_column(justify="left", style="dim")
 
     table.add_row("↑ sent", format_count(sent), "to the model")
     table.add_row("↓ received", format_count(received), "generated back")
     if cached:
         table.add_row("◇ cached", format_count(cached), "reused · cheaper")
-    yield Align.center(table)
+    yield table
     if last and last.get("calls"):
         last_total = (last.get("input") or 0) + (last.get("output") or 0)
         suffix = " · estimated" if last.get("estimated") else ""
         last_line = Text()
-        last_line.append("—  last turn  ", style="dim")
+        last_line.append("  last turn  ", style="dim")
         last_line.append(f"{format_count(last_total)} tokens{suffix}", style="white")
         yield Text("")
-        yield Align.center(last_line)
+        yield last_line
     elif session.get("estimated"):
         yield Text("  ~ estimated, not billed", style="dim")
 
@@ -1566,7 +1563,7 @@ def show_summary(summary, trace=None):
         return
     rule()
     title = Text()
-    title.append("  Summary", style="bold white")
+    title.append("  summary", style="white")
     title.append("  ·  last implementation", style="dim")
     console.print(title)
     console.print()
@@ -1577,8 +1574,8 @@ def show_summary(summary, trace=None):
             name = t.get("tool", "")
             detail = t.get("detail") or ""
             line = Text()
-            line.append("    • ", style="dim")
-            line.append(name, style="bold")
+            line.append("    – ", style="dim")
+            line.append(name, style="white")
             if detail:
                 line.append(f"  {detail}", style="dim")
             console.print(line)
@@ -1596,7 +1593,7 @@ def show_copied(msg="Copied to clipboard."):
     console.print()
     line = Text()
     line.append("  ", style="dim")
-    line.append(msg, style="bold white")
+    line.append(msg, style="white")
     console.print(line)
     console.print()
 
@@ -1605,7 +1602,7 @@ def show_export(path):
     console.print()
     line = Text()
     line.append("  Exported to ", style="dim")
-    line.append(str(path), style="bold white")
+    line.append(str(path), style="white")
     console.print(line)
     console.print()
 
@@ -1613,7 +1610,7 @@ def show_export(path):
 def show_skills(skills):
     rule()
     title = Text()
-    title.append("  Skills", style="bold white")
+    title.append("  skills", style="white")
     title.append(f"  ·  {len(skills or [])} installed", style=DIM_COLOR)
     console.print(title)
     if not skills:
@@ -1622,8 +1619,8 @@ def show_skills(skills):
     else:
         for s in skills:
             row = Text()
-            row.append("  ❯ ", style=f"bold {HAZZEL_COLOR}")
-            row.append(s.get("name", ""), style="bold white")
+            row.append("  ❯ ", style=DIM_COLOR)
+            row.append(s.get("name", ""), style="white")
             row.append(f"  ·  {s.get('source', '')}", style=DIM_COLOR)
             console.print(row)
             desc = (s.get("description") or "no description").strip()
@@ -1636,7 +1633,7 @@ def show_skills(skills):
 def show_skill_detail(name, body):
     rule()
     title = Text()
-    title.append(f"  Skill: {name}", style="bold white")
+    title.append(f"  skill: {name}", style="white")
     console.print(title)
     for line in (body or "").splitlines()[:60]:
         console.print(Text(f"  {line[:160]}", style="white" if line.strip() else DIM_COLOR))
@@ -1647,7 +1644,7 @@ def show_skill_detail(name, body):
 
 def show_logout():
     text = Text()
-    text.append("  ○ ", style=f"bold {DIM_COLOR}")
+    text.append("  ○ ", style=DIM_COLOR)
     text.append("Saved API keys cleared", style="dim")
     console.print(text)
     console.print("  Run /model to set a new key.", style="dim")
@@ -1801,13 +1798,13 @@ def select_model(catalog, current_id=None):
         text = Text()
         text.append("  ")
         if i == idx:
-            text.append("❯ ", style=f"bold {HAZZEL_COLOR}")
+            text.append("❯ ", style="white")
             text.append(f"{i+1}. ", style="dim")
-            text.append(pad, style="bold bright_white")
+            text.append(pad, style="white")
         else:
             text.append("  ")
             text.append(f"{i+1}. ", style="dim")
-            text.append(pad, style="bold bright_white")
+            text.append(pad, style="white")
         text.append(f"  ({m['provider_display']})", style="dim")
         console.print(text)
     console.print()
