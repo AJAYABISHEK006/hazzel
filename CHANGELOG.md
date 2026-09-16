@@ -3,6 +3,14 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Added
+- Session persistence: single last-session slot per project (`~/.config/hazzel/sessions/`) — saved after each turn and on exit, restored on launch; `/session restore` reloads it ("back where you left off"); `/clear` archives the wiped session for one restore.
+
+## [1.4.3] - 2026-09-16
+### Changed
+- Packaging: single-source version from `hazzel.__version__`, PEP 639 license expression, authors/URLs, floored dependencies, `dev` extras, pytest/ruff config, `MANIFEST.in`; removed unused imports; fixed stale version fallbacks and docs.
+
 ## [1.4.2] - 2026-09-15
 ### Changed
 - Header stacks project path under the version line instead of sharing one row.

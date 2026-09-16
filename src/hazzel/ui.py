@@ -5,9 +5,7 @@ import time
 
 from rich.console import Console
 from rich.containers import Renderables
-from rich.align import Align
 from rich.live import Live
-from rich.panel import Panel
 from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
@@ -63,7 +61,7 @@ def _show_header(display_name, project_root):
         try:
             from hazzel import __version__ as _ver
         except Exception:
-            _ver = "1.3.2"
+            _ver = "1.4.3"
     title = Text()
     title.append("hazzel", style=HAZZEL_COLOR)
     title.append(f" {_ver}", style=DIM_COLOR)
@@ -79,7 +77,8 @@ SLASH_COMMANDS = [
     {"name": "/goal", "desc": "objective + run · criteria"},
     {"name": "/help", "desc": "show help"},
     {"name": "/docs", "desc": "full usage guide"},
-    {"name": "/clear", "desc": "clear conversation + usage"},
+    {"name": "/clear", "desc": "clear conversation + usage + saved session"},
+    {"name": "/session", "desc": "restore last saved session"},
     {"name": "/summary", "desc": "summarize last implementation"},
     {"name": "/export", "desc": "save transcript to markdown"},
     {"name": "/copy", "desc": "copy last reply [code]"},
@@ -1127,6 +1126,48 @@ def show_user_command(command):
     text.append("❯ ", style="dim")
     text.append(command.strip(), style="white")
     console.print(text)
+
+
+def show_history(messages):
+    items = []
+    for msg in messages or []:
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") not in ("user", "assistant"):
+            continue
+        content = msg.get("content") or ""
+        if isinstance(content, list):
+            parts = []
+            for part in content:
+                if isinstance(part, str):
+                    parts.append(part)
+                elif isinstance(part, dict) and isinstance(part.get("text"), str):
+                    parts.append(part["text"])
+            content = "\n".join(parts)
+        if not isinstance(content, str):
+            continue
+        content = content.strip()
+        if not content:
+            continue
+        items.append((msg["role"], content))
+    if not items:
+        return
+    if len(items) >= 2 and items[-2][0] == "user" and items[-1][0] == "assistant":
+        items = items[-2:]
+    else:
+        items = items[-1:]
+    for role, content in items:
+        if role == "user":
+            rule()
+            text = Text()
+            text.append("❯ ", style="bold")
+            text.append(content, style="white")
+            console.print(text)
+            rule()
+            console.print()
+        else:
+            show_hazzel_message(content)
+            console.print()
 
 
 def show_error(message):

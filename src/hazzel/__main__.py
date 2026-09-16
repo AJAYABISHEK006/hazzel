@@ -2,6 +2,7 @@ import sys
 
 from hazzel import agent
 from hazzel import safety
+from hazzel import session
 from hazzel import ui
 from hazzel import config
 from hazzel import wincompat
@@ -63,7 +64,7 @@ def _version():
             from hazzel import __version__
             return __version__
         except Exception:
-            return "1.3.2"
+            return "1.4.3"
 
 
 VERSION = _version()
@@ -89,6 +90,19 @@ def main(argv=None):
     if not config.has_any_key():
         console.print("  No API key yet — run /model to add one (takes ~10s).", style="dim")
         console.print()
+    def _persist():
+        try:
+            session.save(messages, _last_summary, _last_trace, _last_user_input, _last_response)
+        except Exception:
+            pass
+    def _apply_restored(restored):
+        global _last_summary, _last_trace, _last_response, _last_user_input
+        messages.extend(restored["messages"])
+        _last_summary = restored["summary"] or None
+        _last_trace = restored["trace"] or []
+        _last_response = restored["response"] or None
+        _last_user_input = restored["user_input"] or None
+        return len(restored["messages"])
     while True:
         try:
             prefill, _pending_prefill = _pending_prefill, ""
@@ -96,11 +110,13 @@ def main(argv=None):
         except KeyboardInterrupt:
             continue
         except EOFError:
+            _persist()
             break
         except Exception as error:
             ui.show_error(f"Input failed ({error}). Try again.")
             continue
         if user_input.strip().lower() in ["exit", "quit", "/exit", "/q", ":q", ":quit"]:
+            _persist()
             break
         if not user_input.strip():
             continue
@@ -224,6 +240,7 @@ def main(argv=None):
                 _last_response = response
                 ui.show_reasoning(agent.get_last_reasoning())
                 ui.show_hazzel_message(response)
+                _persist()
                 continue
             if head in ("accept", "criteria", "ok"):
                 current = config.get_goal() or {}
@@ -320,6 +337,7 @@ def main(argv=None):
             _last_response = response
             ui.show_reasoning(agent.get_last_reasoning())
             ui.show_hazzel_message(response)
+            _persist()
             continue
         if low_in == "init" or low_in.startswith("/init"):
             raw = user_input.strip()
@@ -374,6 +392,8 @@ def main(argv=None):
             messages.clear()
             messages.append({"role": "system", "content": agent.build_system_prompt(config.PROJECT_ROOT)})
             agent.reset_conversation_state()
+            session.backup()
+            session.clear()
             _last_summary = None
             _last_trace = []
             _last_response = None
@@ -384,6 +404,44 @@ def main(argv=None):
             except OSError:
                 pass
             ui.show_welcome(config.get_current_display_name(), config.PROJECT_ROOT)
+            continue
+        if low_in == "session" or low_in.startswith("/session"):
+            raw = user_input.strip()
+            arg = (raw[8:].strip() if raw.startswith("/") else raw[7:].strip()).lower()
+            if arg in ("restore", "reload", "back"):
+                try:
+                    previous = session.load_backup()
+                except Exception:
+                    previous = None
+                from_backup = previous is not None
+                if not previous:
+                    try:
+                        previous = session.load()
+                    except Exception:
+                        previous = None
+                if not previous:
+                    ui.show_error("No saved session — nothing to restore.")
+                    continue
+                messages.clear()
+                messages.append({"role": "system", "content": agent.build_system_prompt(config.PROJECT_ROOT)})
+                agent.reset_conversation_state()
+                count = _apply_restored(previous)
+                if from_backup:
+                    session.clear_backup()
+                _persist()
+                try:
+                    sys.stdout.write("\x1b[2J\x1b[3J\x1b[H")
+                    sys.stdout.flush()
+                except OSError:
+                    pass
+                ui.show_welcome(config.get_current_display_name(), config.PROJECT_ROOT)
+                try:
+                    ui.show_history(messages)
+                except Exception:
+                    pass
+                continue
+            console.print("  Usage: /session restore — reload the last saved session.", style="dim")
+            console.print()
             continue
         _last_user_input = user_input
         ui.set_quiet(True)
@@ -411,6 +469,7 @@ def main(argv=None):
         _last_response = response
         ui.show_reasoning(agent.get_last_reasoning())
         ui.show_hazzel_message(response)
+        _persist()
 
 
 if __name__ == "__main__":
