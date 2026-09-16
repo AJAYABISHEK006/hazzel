@@ -23,7 +23,7 @@ def test_list_outside():
 
 def test_list_ok():
     rows = list_files("src/hazzel")
-    assert isinstance(rows, list) and any("agent.py" in r for r in rows)
+    assert isinstance(rows, list) and any(r == "agent/" for r in rows)
 
 
 def test_read_missing_suggests():

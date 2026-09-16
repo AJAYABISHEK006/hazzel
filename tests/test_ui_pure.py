@@ -36,7 +36,7 @@ def test_docs_cover_core_workflows():
     from hazzel.docs import get_sections
 
     body = "\n".join(line for _, lines in get_sections() for line in lines)
-    for keyword in ("/model", "/plan", "/prove", "/undo", "@"):
+    for keyword in ("/model", "/plan", "/undo", "@"):
         assert keyword in body
 
 
@@ -80,8 +80,8 @@ def test_mention_fuzzy_transpositions():
 
 
 def test_mention_exact_still_first():
-    cands, _ = ui._mention_candidates("agent")
-    assert any("agent.py" in c for c in cands[:2])
+    cands, _ = ui._mention_candidates("safety")
+    assert any("safety.py" in c for c in cands[:2])
 
 
 def test_slash_prefix_and_substring():

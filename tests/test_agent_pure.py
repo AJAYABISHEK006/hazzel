@@ -49,16 +49,6 @@ def test_parse_packages():
     assert agent._parse_package_names("dependencies") is None
 
 
-def test_prove_predicates(monkeypatch):
-    trace = [{"tool": "write_file", "detail": "a.py", "success": True, "result": "x", "exit_code": None}]
-    monkeypatch.setattr(config, "is_prove_enabled", lambda: False)
-    assert agent._should_prove(trace, "done") is False
-    monkeypatch.setattr(config, "is_prove_enabled", lambda: True)
-    assert agent._should_prove(trace, "done") is True
-    monkeypatch.setattr(agent, "_detect_repo_harness", lambda: None)
-    assert agent._should_prove([{"tool": "edit_file", "detail": "notes.md", "success": True}], "done") is False
-
-
 def test_contact_error_format():
     assert agent._format_contact_error(RuntimeError("boom")).startswith("Unable to contact")
     assert agent._format_contact_error(RuntimeError("Rate limit reached on Groq")).startswith("Rate limit")
@@ -90,7 +80,7 @@ def test_safe_chat_heals_bad_tool():
 
 
 def test_fast_install(monkeypatch):
-    with patch.object(agent, "run_tool", return_value="ok") as run:
+    with patch.object(agent.fastpath, "run_tool", return_value="ok") as run:
         msgs = [{"role": "system", "content": "x"}]
         reply, trace, _ = agent.try_fast_path(msgs, "download tabulate and colorama")
         assert run.call_args[0][1]["command"] == "pip install tabulate colorama"
@@ -98,7 +88,7 @@ def test_fast_install(monkeypatch):
 
 
 def test_fast_run_guards(monkeypatch):
-    with patch.object(agent, "run_tool", return_value="10 passed"):
+    with patch.object(agent.fastpath, "run_tool", return_value="10 passed"):
         msgs = [{"role": "system", "content": "x"}]
         assert agent.try_fast_path(msgs, "run pytest -q")[0] == "10 passed"
     assert agent.try_fast_path([{"role": "system", "content": "x"}], "run rm -rf /") is None

@@ -24,7 +24,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
         [
             "/model — switch provider/model   /help — quick overview   /docs — this guide",
             "Run shell commands with ! or ask Hazzel to run them (approval first).",
-            "/plan on|off — read-only exploration   /prove on|off — smoke-check edits   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
+            "/plan on|off — read-only exploration   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
             "/undo [n] — revert file changes   /retry — re-run last message",
             "/usage — token spend   /export [file] — save transcript   /copy [code] — copy reply",
             "/init [file] — project map   /clear — reset chat   /logout — wipe keys   /exit — quit",
@@ -55,10 +55,9 @@ SECTIONS: list[tuple[str, list[str]]] = [
         ],
     ),
     (
-        "Plan, think and prove modes",
+        "Plan and think modes",
         [
             "/plan on makes Hazzel read-only: it explores and hands you a numbered plan, changing nothing until /plan off.",
-            "/prove on smoke-checks Python edits in /tmp after each change, so you see pass/fail before trusting it.",
             "/think on asks supported models to reason step-by-step before answering — costs more tokens, better on hard problems.",
         ],
     ),

@@ -6,6 +6,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - Session persistence: single last-session slot per project (`~/.config/hazzel/sessions/`) — saved after each turn and on exit, restored on launch; `/session restore` reloads it ("back where you left off"); `/clear` archives the wiped session for one restore.
+### Removed
+- Prove mode (`/prove`, `config.is_prove_enabled/set_prove_enabled`, `agent` prove helpers): no more post-turn smoke scripts in `/tmp`; verify with `!pytest -q` / `run` instead.
+### Changed
+- Split `agent.py` (1668 lines) into the `hazzel.agent` package: `toolspec` (prompt/schemas), `state` (usage/target/reasoning state), `dispatch` (tool normalization + `run_tool`), `history` (summary/compaction/budget), `fastpath` (zero-LLM replies), `prove` (smoke harness), `core` (chat + `run()` loop). `hazzel.agent` re-exports the full previous surface, so `from hazzel import agent` and `agent.run/run_tool/try_fast_path/...` keep working unchanged.
 
 ## [1.4.3] - 2026-09-16
 ### Changed

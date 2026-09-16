@@ -37,7 +37,6 @@ def test_think_persists(monkeypatch, tmp_path):
 def test_think_runs_provider_flag(monkeypatch, tmp_path):
     from hazzel import agent
     _tmp_config(monkeypatch, tmp_path)
-    monkeypatch.setattr(agent.config, "set_prove_enabled", lambda _: None)
     seen = {}
 
     class FakeProvider:
@@ -48,7 +47,7 @@ def test_think_runs_provider_flag(monkeypatch, tmp_path):
             seen["on_reason"] = on_reason
             return ChatResponse(content="ok")
 
-    monkeypatch.setattr(agent, "get_provider", lambda: FakeProvider())
+    monkeypatch.setattr(agent.core, "get_provider", lambda: FakeProvider())
     messages = [{"role": "system", "content": "test"}]
 
     config.set_think_enabled(False)

@@ -145,23 +145,6 @@ def main(argv=None):
             handle_model_command()
             continue
         low_in = user_input.strip().lower()
-        parts_prove = user_input.strip().lower().split()
-        if parts_prove and parts_prove[0] == "/prove":
-            arg = parts_prove[1] if len(parts_prove) > 1 else ""
-            if arg in ("on", "enable", "true", "1"):
-                config.set_prove_enabled(True)
-            elif arg in ("off", "disable", "false", "0"):
-                config.set_prove_enabled(False)
-            elif arg in ("status", "show", ""):
-                pass
-            else:
-                ui.show_error("Usage: /prove on|off")
-                console.print()
-                continue
-            state = "on" if config.is_prove_enabled() else "off"
-            console.print(f"  Prove mode: {state} — ephemeral smoke check in /tmp after edits.", style="dim")
-            console.print()
-            continue
         parts_plan = user_input.strip().lower().split()
         if parts_plan and parts_plan[0] == "/plan":
             arg = parts_plan[1] if len(parts_plan) > 1 else ""

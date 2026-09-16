@@ -44,7 +44,6 @@ If you want the most feature-heavy agent, there are better options. If you want 
 - Create and edit files with diff preview and approval. Undo with `/undo`.
 - Run shell commands with approval and timeout, sandboxed to your project root. Read-only cmds (`ls`, `cat`…) skip approval.
 - Plan mode (`/plan on`): read-only exploration. Hazzel proposes a numbered plan, changes nothing until you run `/plan off`.
-- Prove mode (`/prove on`): smoke-checks Python edits in `/tmp` before you trust them.
 - Think mode (`/think on`): lets supported models reason step-by-step before answering — costs more tokens, wins on hard edits.
 - Goal (`/goal`): pin an objective, run it with `/goal run`; every turn steers toward it until done.
 - Model thinking stays collapsed behind an Enter-to-expand prompt — peek only when curious.
