@@ -27,7 +27,7 @@ def mark_star_nudged():
 
 
 DEFAULT_CONTEXT_WINDOW = 131072
-OLLAMA_CONTEXT_WINDOW = 32768
+OLLAMA_CONTEXT_WINDOW = 65536
 
 MODEL_CATALOG = [
     {"display_name": "GPT OSS 120B", "id": "openai/gpt-oss-120b", "provider": "groq", "provider_display": "Groq", "context": 131072},
@@ -65,6 +65,10 @@ MODEL_CATALOG = [
     {"display_name": "DeepSeek V4 Pro", "id": "deepseek-v4-pro", "provider": "deepseek", "provider_display": "DeepSeek", "context": 131072},
     {"display_name": "GPT-6 Astra", "id": "openai/gpt-6-astra", "provider": "openrouter", "provider_display": "OpenRouter", "context": 400000},
     {"display_name": "Gemini 3.8 Flash", "id": "google/gemini-3.8-flash", "provider": "openrouter", "provider_display": "OpenRouter", "context": 1048576},
+    {"display_name": "Qwen2.5 Coder 32B", "id": "qwen2.5-coder:32b", "provider": "ollama", "provider_display": "Ollama", "context": 32768},
+    {"display_name": "Qwen3 30B", "id": "qwen3:30b", "provider": "ollama", "provider_display": "Ollama", "context": 40960},
+    {"display_name": "DeepSeek Coder V2 16B", "id": "deepseek-coder-v2:16b", "provider": "ollama", "provider_display": "Ollama", "context": 65536},
+    {"display_name": "Codestral 22B", "id": "codestral:22b", "provider": "ollama", "provider_display": "Ollama", "context": 32768},
 ]
 
 
@@ -352,7 +356,7 @@ def get_catalog():
         from .providers.ollama import fetch_local_models
         known = {m["id"] for m in MODEL_CATALOG}
         extra = [
-            {"display_name": f"{name} (local)", "id": name, "provider": "ollama", "provider_display": "Ollama"}
+            {"display_name": f"{name} (local)", "id": name, "provider": "ollama", "provider_display": "Ollama", "context": OLLAMA_CONTEXT_WINDOW}
             for name in fetch_local_models()
             if name not in known
         ]

@@ -6,6 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - Session persistence: single last-session slot per project (`~/.config/hazzel/sessions/`) — saved after each turn and on exit, restored on launch; `/session restore` reloads it ("back where you left off"); `/clear` archives the wiped session for one restore.
+- Stronger Ollama base: curated defaults (`qwen2.5-coder:32b`, `qwen3:30b`, `deepseek-coder-v2:16b`, `codestral:22b`) with per-model context, dedicated `OllamaProvider` (`num_ctx` 65536, `keep_alive` 30m, `ollama pull` hints).
 ### Removed
 - Prove mode (`/prove`, `config.is_prove_enabled/set_prove_enabled`, `agent` prove helpers): no more post-turn smoke scripts in `/tmp`; verify with `!pytest -q` / `run` instead.
 ### Changed

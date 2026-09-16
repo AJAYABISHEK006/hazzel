@@ -51,6 +51,6 @@ def create_provider(provider, api_key, model):
         name, base_url = COMPAT_PROVIDERS[provider]
         return OpenAIProvider(api_key, model, base_url=base_url, provider_name=name)
     if provider == "ollama":
-        from .openai import OpenAIProvider
-        return OpenAIProvider(api_key or "ollama", model, base_url=_ollama_base_url(), provider_name="Ollama")
+        from .ollama import OllamaProvider
+        return OllamaProvider(api_key or "ollama", model, base_url=_ollama_base_url(), provider_name="Ollama")
     raise RuntimeError(f"Unknown provider: {provider}")
