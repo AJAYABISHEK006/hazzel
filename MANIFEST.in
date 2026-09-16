@@ -1,3 +1,1 @@
-include README.md CHANGELOG.md ROADMAP.md AGENTS.md LICENSE
-recursive-include assets *.png *.gif
-global-exclude __pycache__ *.py[cod] .DS_Store
+
