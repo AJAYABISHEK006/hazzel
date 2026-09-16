@@ -3,7 +3,9 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.4.4] - 2026-09-16
+### Fixed
+- `@` mention fuzzy test now matches the `hazzel.agent` package layout (`agnt`→`agent/` files); provider factory hardened (`get_provider` zero-arg, compat wiring, Ollama local-model fetch).
 ### Added
 - Session persistence: single last-session slot per project (`~/.config/hazzel/sessions/`) — saved after each turn and on exit, restored on launch; `/session restore` reloads it ("back where you left off"); `/clear` archives the wiped session for one restore.
 - Stronger Ollama base: curated defaults (`qwen2.5-coder:32b`, `qwen3:30b`, `deepseek-coder-v2:16b`, `codestral:22b`) with per-model context, dedicated `OllamaProvider` (`num_ctx` 65536, `keep_alive` 30m, `ollama pull` hints).

@@ -72,7 +72,7 @@ def test_fuzzy_score_boundary_bonus():
 
 def test_mention_fuzzy_transpositions():
     cands, _ = ui._mention_candidates("agnt")
-    assert any("agent.py" in c for c in cands)
+    assert any("agent" in c for c in cands)
     cands, _ = ui._mention_candidates("sfty")
     assert any("safety.py" in c for c in cands)
     cands, _ = ui._mention_candidates("runcmd")
