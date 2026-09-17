@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hazzel — a small terminal coding agent</title>
-<meta name="description" content="Hazzel lives in your terminal. It reads code, edits files, runs commands, and works with git — always with your approval first. Bring your own key.">
+<meta name="description" content="Hazzel lives in your terminal. It reads code, edits files, runs commands, and reads the web — always with your approval first. Bring your own key.">
 <meta property="og:title" content="Hazzel — a small terminal coding agent">
-<meta property="og:description" content="Reads code, edits files, runs commands, works with git — always with your approval first.">
+<meta property="og:description" content="Reads code, edits files, runs commands, reads the web — always with your approval first.">
 <meta property="og:image" content="logo.png">
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,7 +34,7 @@
 
   <p class="dim">hazzel v1.4.5</p>
 
-  <p>Hazzel is a coding agent harness and CLI that lives in your terminal. It reads code, edits files, runs commands, and works with git — always with your approval first.</p>
+  <p>Hazzel is a coding agent harness and CLI that lives in your terminal. It reads code, edits files, runs commands, and reads the web — always with your approval first.</p>
 
   <p>Its output is closer to a Unix shell than an IDE in the terminal: every step is visible, every mutation goes through you.</p>
 
@@ -52,11 +52,13 @@
   <h2 id="why">Why Hazzel</h2>
 
   <ul>
-    <li><strong>Approval-first</strong>: file changes show a diff before they apply, shell commands ask first, destructive git stays blocked.</li>
+    <li><strong>Approval-first</strong>: file changes show a diff before they apply, shell commands ask first, destructive file ops are checkpointed so <code>/undo</code> always works.</li>
     <li><strong>Small and inspectable</strong>: no background agents, no deploys, no hidden behavior — a terminal agent you can see through.</li>
-    <li><strong>Senior review built in</strong>: <code>/review</code> returns a verdict plus severity-ranked findings, scoped to a file or the whole codebase.</li>
+    <li><strong>Real cost visibility</strong>: provider-reported tokens priced into dollars and logged locally — <code>/usage today|week|month</code>, <code>/budget</code> warns but never blocks.</li>
     <li><strong>Goal-driven</strong>: <code>/goal</code> pins an objective and every turn steers toward it until done.</li>
-    <li><strong>Token-efficient</strong>: web pages condense to query-relevant sentences, history compacts between turns.</li>
+    <li><strong>Plan and think modes</strong>: <code>/plan on</code> explores read-only and hands you a numbered plan; <code>/think on</code> reasons step-by-step on hard edits.</li>
+    <li><strong>Skills and AGENTS.md</strong>: drop in a <code>SKILL.md</code> or project map and Hazzel follows it every turn.</li>
+    <li><strong>Sessions that survive restarts</strong>: per-project history saves automatically, <code>/session restore</code> picks up where you left off.</li>
     <li><strong>Model and provider agnostic</strong>: Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter, and local Ollama through one key each.</li>
   </ul>
 
@@ -64,22 +66,25 @@
       <p class="turn-head">Hazzel <span class="dim">1.4.5</span></p>
       <p class="dim">~/hazzel</p>
       <p class="turn-prompt">❯</p>
-      <p class="dim">openai/gpt-oss-120b · 0 tokens · build · @ tag file · /exit</p>
+      <p class="dim">openai/gpt-oss-120b · 1.2k tokens · $0.004 session · build · @ tag file</p>
     </div>
 
   <h2 id="commands">Commands</h2>
 
-  <p class="group">Session</p>
+  <p class="group">Modes</p>
   <ul>
     <li><code>/model</code> — switch provider and model</li>
-    <li><code>/goal [@objective]</code> — pin an objective, <code>/goal run</code> executes it</li>
     <li><code>/plan on|off</code> — read-only exploration with a numbered plan</li>
-    <li><code>/usage</code> — token spend this session</li>
-    <li><code>/clear</code> — reset the conversation</li>
-    <li><code>/logout</code> — wipe saved keys</li>
+    <li><code>/think on|off</code> — deeper reasoning when a task is hard</li>
+    <li><code>/goal [@objective]</code> — pin an objective, <code>/goal run</code> executes it</li>
   </ul>
 
-
+  <p class="group">Cost</p>
+  <ul>
+    <li><code>/usage</code> — tokens and dollars this session</li>
+    <li><code>/usage today|week|month</code> — spend over time, <code>--by-model</code> per model</li>
+    <li><code>/budget</code> — warn-only spend limits, never blocks</li>
+  </ul>
 
   <p class="group">Transcript</p>
   <ul>
@@ -88,10 +93,19 @@
     <li><code>/copy [code]</code> — copy the last reply</li>
     <li><code>/retry</code> — re-run your last message</li>
     <li><code>/undo [n]</code> — revert file changes</li>
+    <li><code>/session restore</code> — pick up where you left off</li>
+    <li><code>/clear</code> — reset the conversation</li>
+  </ul>
+
+  <p class="group">Project</p>
+  <ul>
     <li><code>/init [file]</code> — generate an AGENTS.md project map</li>
     <li><code>/skills [name]</code> — list installed skills, preview one</li>
-    <li><code>/docs</code> — the full usage guide, in your terminal</li>
+    <li><code>/help</code> — quick overview, <code>/docs</code> — the full usage guide</li>
+    <li><code>/logout</code> — wipe saved keys, <code>/exit</code> — quit</li>
   </ul>
+
+  <p>Type <code>@path</code> to attach a file, <code>!command</code> to run shell directly.</p>
 
   <p><a href="https://github.com/mukundzha/hazzel/releases">changelog</a></p>
 </main>
