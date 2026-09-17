@@ -10,6 +10,114 @@ MAX_MENTION_FILES = 5
 MAX_MENTION_CHARS = 3000
 TRAILING_PUNCT = ".,!?;:)]"
 
+IMAGE_EXTS = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp"})
+MAX_IMAGE_BYTES = 8_000_000
+IMAGE_TOKEN_ESTIMATE = 1500
+
+_MEDIA_BY_EXT = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+}
+
+
+def is_image_path(target):
+    name = (target or "").lower().strip()
+    for ext in IMAGE_EXTS:
+        if name.endswith(ext):
+            return True
+    return False
+
+
+def guess_media_type(filename):
+    name = (filename or "").lower()
+    for ext, media in _MEDIA_BY_EXT.items():
+        if name.endswith(ext):
+            return media
+    return None
+
+
+def load_image_data_url(resolved):
+    media = guess_media_type(str(resolved)) or "image/png"
+    try:
+        data = resolved.read_bytes()
+    except OSError:
+        return None, None, "unreadable"
+    if not data:
+        return None, None, "empty file"
+    if len(data) > MAX_IMAGE_BYTES:
+        return None, None, f"image too large ({len(data)} bytes, max {MAX_IMAGE_BYTES})"
+    try:
+        import base64
+
+        b64 = base64.b64encode(data).decode("ascii")
+    except Exception:
+        return None, None, "unreadable"
+    return f"data:{media};base64,{b64}", media, None
+
+
+def collect_mention_images(targets):
+    images = []
+    for target in targets or []:
+        if not is_image_path(target):
+            continue
+        try:
+            resolved = resolve_project_path(target)
+        except ValueError:
+            continue
+        try:
+            if not resolved.exists() or not resolved.is_file():
+                continue
+        except OSError:
+            continue
+        try:
+            if os.path.getsize(resolved) > MAX_IMAGE_BYTES or os.path.getsize(resolved) == 0:
+                continue
+        except OSError:
+            continue
+        data_url, media, err = load_image_data_url(resolved)
+        if err or not data_url:
+            continue
+        try:
+            size = os.path.getsize(resolved)
+        except OSError:
+            size = len(data_url)
+        images.append({"path": target, "media_type": media, "data_url": data_url, "bytes": size})
+        if len(images) >= MAX_MENTION_FILES:
+            break
+    return images
+
+
+def build_user_content(text, images):
+    if not images:
+        return text
+    parts = [{"type": "text", "text": text or ""}]
+    for img in images or []:
+        url = img.get("data_url") if isinstance(img, dict) else None
+        if not url:
+            continue
+        parts.append({"type": "image_url", "image_url": {"url": url}})
+    return parts
+
+
+def content_text_len(content):
+    if isinstance(content, str):
+        return len(content)
+    if isinstance(content, list):
+        total = 0
+        for part in content:
+            if isinstance(part, str):
+                total += len(part)
+            elif isinstance(part, dict):
+                if isinstance(part.get("text"), str):
+                    total += len(part["text"])
+                elif part.get("type") == "image_url":
+                    total += IMAGE_TOKEN_ESTIMATE * 4
+        return total
+    return len(str(content or ""))
+
 
 def parse_mentions(text):
     seen = []
@@ -104,6 +212,23 @@ def expand_mentions(text):
                 continue
         except OSError:
             errors.append(f"@{target}: unreadable")
+            continue
+        if is_image_path(target):
+            try:
+                size = os.path.getsize(resolved)
+            except OSError:
+                errors.append(f"@{target}: unreadable")
+                continue
+            if size == 0:
+                errors.append(f"@{target}: empty file, skipped")
+                continue
+            if size > MAX_IMAGE_BYTES:
+                errors.append(f"@{target}: image too large ({size} bytes, max {MAX_IMAGE_BYTES}), resize and retry")
+                continue
+            media = guess_media_type(target) or "image/png"
+            blocks.append(f'<image path="{target}">\n(image attached: {media}, {size} bytes — view the attached image)\n</image>')
+            contents[target] = f"(image {media}, {size} bytes attached)"
+            ok.append(target)
             continue
         if os.path.getsize(resolved) > 2_000_000:
             errors.append(f"@{target}: file too large, use search_files instead")

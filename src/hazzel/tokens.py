@@ -8,10 +8,27 @@ def estimate_text(text):
     return max(1, len(text) // 4)
 
 
+def estimate_content(content):
+    if isinstance(content, str):
+        return estimate_text(content)
+    if isinstance(content, list):
+        total = 0
+        for part in content:
+            if isinstance(part, str):
+                total += estimate_text(part)
+            elif isinstance(part, dict):
+                if isinstance(part.get("text"), str):
+                    total += estimate_text(part["text"])
+                elif part.get("type") == "image_url":
+                    total += 1500
+        return max(1, total)
+    return estimate_text(content)
+
+
 def estimate_messages(messages, tools=None):
     total = 0
     for m in messages or []:
-        total += estimate_text(m.get("content"))
+        total += estimate_content(m.get("content"))
         for tc in m.get("tool_calls") or []:
             fn = tc.get("function", {})
             total += estimate_text(fn.get("name"))

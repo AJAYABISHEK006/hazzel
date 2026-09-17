@@ -36,6 +36,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
         "Files and context",
         [
             "Type @ plus a path to attach a file to your message (Tab completes).",
+            "Type @screenshot.png / @mock.jpg to attach an image — Hazzel sees it (png, jpg, gif, webp, up to 8MB).",
             "Hazzel reads attached files itself — never paste code by hand.",
             "'read <path>', 'list <dir>', 'create <file>', 'delete <file>' run instantly, no model needed.",
             "Say 'fetch <url>' or paste an http(s) link — Hazzel reads the page and tells you what it says.",

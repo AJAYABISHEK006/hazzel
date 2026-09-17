@@ -157,7 +157,15 @@ def context_usage(messages=None):
 
 
 def _enforce_turn_budget(task_messages):
-    while sum(len(m.get("content") or "") for m in task_messages) // 4 > TURN_TOKEN_BUDGET:
+    def _msg_len(m):
+        try:
+            from hazzel.mentions import content_text_len
+
+            return content_text_len(m.get("content"))
+        except Exception:
+            c = m.get("content") or ""
+            return len(c) if isinstance(c, str) else len(str(c))
+    while sum(_msg_len(m) for m in task_messages) // 4 > TURN_TOKEN_BUDGET:
         distilled = False
         for m in task_messages:
             if m.get("role") == "tool":

@@ -33,6 +33,65 @@ def _openai_tools_to_anthropic(tools):
     return anth
 
 
+def _parse_data_url(url):
+    try:
+        if not isinstance(url, str) or not url.startswith("data:"):
+            return None, None
+        header, _, b64 = url.partition(",")
+        if not b64:
+            return None, None
+        mime = header.split(":", 1)[1].split(";", 1)[0].strip().lower() or None
+        if mime not in ("image/png", "image/jpeg", "image/gif", "image/webp"):
+            return None, None
+        return mime, b64
+    except Exception:
+        return None, None
+
+
+def _openai_parts_to_anthropic(content):
+    blocks = []
+    for part in content or []:
+        if isinstance(part, str):
+            if part:
+                blocks.append({"type": "text", "text": part})
+            continue
+        if not isinstance(part, dict):
+            continue
+        ptype = part.get("type")
+        if ptype == "text" and isinstance(part.get("text"), str):
+            blocks.append({"type": "text", "text": part["text"]})
+        elif ptype == "image_url":
+            inner = part.get("image_url") or {}
+            url = inner.get("url") if isinstance(inner, dict) else None
+            media, b64 = _parse_data_url(url)
+            if media and b64:
+                blocks.append({"type": "image", "source": {"type": "base64", "media_type": media, "data": b64}})
+            elif isinstance(url, str) and url.startswith("http"):
+                blocks.append({"type": "text", "text": f"[image url not fetched: {url}]"})
+        elif isinstance(part.get("text"), str):
+            blocks.append({"type": "text", "text": part["text"]})
+    if not blocks:
+        blocks.append({"type": "text", "text": ""})
+    return blocks
+
+
+def _content_to_text(content):
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for x in content:
+            if isinstance(x, str):
+                parts.append(x)
+            elif isinstance(x, dict):
+                if isinstance(x.get("text"), str):
+                    parts.append(x["text"])
+                elif x.get("type") == "text" and isinstance(x.get("text"), str):
+                    parts.append(x["text"])
+        return "\n".join(parts)
+    return str(content or "")
+
+
 def _messages_to_anthropic(messages):
     system = ""
     anth_msgs = []
@@ -41,20 +100,22 @@ def _messages_to_anthropic(messages):
         if role == "system":
             c = m.get("content") or ""
             if isinstance(c, list):
-                c = " ".join([x.get("text", "") if isinstance(x, dict) else str(x) for x in c])
+                c = _content_to_text(c)
             system = f"{system}\n{c}" if system else c
             continue
         if role == "user":
             content = m.get("content") or ""
             if isinstance(content, list):
-                content = "\n".join(str(x) for x in content)
-            anth_msgs.append({"role": "user", "content": [{"type": "text", "text": str(content)}]})
+                blocks = _openai_parts_to_anthropic(content)
+            else:
+                blocks = [{"type": "text", "text": str(content)}]
+            anth_msgs.append({"role": "user", "content": blocks})
         elif role == "assistant":
             blocks = []
             c = m.get("content")
             if c:
                 if isinstance(c, list):
-                    c = "\n".join(str(x) for x in c)
+                    c = _content_to_text(c)
                 blocks.append({"type": "text", "text": str(c)})
             for tc in m.get("tool_calls") or []:
                 fn = tc.get("function", {})

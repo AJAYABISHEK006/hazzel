@@ -4,7 +4,13 @@ import json
 from hazzel import config
 from hazzel import ui
 from hazzel import skills as _skills
-from hazzel.mentions import expand_mentions, strip_mentions
+from hazzel.mentions import (
+    build_user_content,
+    collect_mention_images,
+    expand_mentions,
+    parse_mentions,
+    strip_mentions,
+)
 from hazzel.providers import get_provider
 
 from .dispatch import (
@@ -168,10 +174,21 @@ def run(messages, user_input):
         return fast
 
     mention_context, attached, _, mention_errors, attached_skills = expand_mentions(user_input)
+    mention_images = []
+    if attached:
+        try:
+            _targets = parse_mentions(user_input)
+            _all_images = collect_mention_images(_targets)
+            _attached_set = set(attached)
+            mention_images = [img for img in _all_images if img.get("path") in _attached_set]
+        except Exception:
+            mention_images = []
     if mention_context:
         task_messages[-1]["content"] = user_input + "\n\n" + mention_context
         if attached:
             task_messages[-1]["content"] += "\n\nAnswer the user's instruction using the attached files; do not reprint them unless asked."
+            if mention_images:
+                task_messages[-1]["content"] += " Attached images are visible to you — describe what you see when relevant."
         if attached_skills:
             task_messages[-1]["content"] += "\n\nFollow the loaded skill instructions for this task."
         for path in attached:
@@ -199,7 +216,27 @@ def run(messages, user_input):
 
     goal_note = _session_goal_note()
     if goal_note:
-        task_messages[-1]["content"] += goal_note
+        try:
+            _cur = task_messages[-1].get("content")
+            if isinstance(_cur, str):
+                task_messages[-1]["content"] = _cur + goal_note
+            elif isinstance(_cur, list):
+                for _part in task_messages[-1]["content"]:
+                    if isinstance(_part, dict) and _part.get("type") == "text":
+                        _part["text"] = (_part.get("text") or "") + goal_note
+                        break
+            else:
+                task_messages[-1]["content"] = str(_cur or "") + goal_note
+        except Exception:
+            pass
+
+    if mention_images:
+        try:
+            _cur = task_messages[-1].get("content")
+            _text = _cur if isinstance(_cur, str) else user_input + ("\n\n" + mention_context if mention_context else "")
+            task_messages[-1]["content"] = build_user_content(_text, mention_images)
+        except Exception:
+            pass
 
     try:
         provider = get_provider()

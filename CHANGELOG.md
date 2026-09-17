@@ -4,6 +4,8 @@ All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- Image attach: `@screenshot.png` / `@mock.jpg` sends the image to the model (png, jpg/jpeg, gif, webp, up to 8MB, max 5 per turn). Works on vision-capable models (OpenAI, Anthropic, Groq/OpenRouter vision models, Ollama vision models); text + `<image>` placeholder stays in context, base64 never touches saved sessions/history. Bare `@img.png` asks what to do, like file attaches.
 
 ## [1.4.6] - 2026-09-17
 ### Added
