@@ -72,7 +72,7 @@ def test_persist_roundtrip(tmp_path, monkeypatch):
 
 def test_is_safe_allowlists():
     assert rc.is_safe_command("ls") is True
-    assert rc.is_safe_command("git status") is False
+    assert rc.is_safe_command("git status") is True
     assert rc.is_safe_command("git push") is False
     assert rc.is_safe_command("rm -rf /") is False
     assert rc.is_safe_command("echo hi | grep h") is False
@@ -128,6 +128,11 @@ def test_plan_blocks_writes_and_allows_reads(monkeypatch):
     assert agent.run_tool("run_command", {"command": "ls"}).startswith("Blocked: plan mode")
     assert "Blocked" not in agent.run_tool("search_files", {"pattern": "x"})
     monkeypatch.setattr(config, "is_plan_enabled", lambda: False)
+
+
+def test_run_tool_blocks_raw_git():
+    out = agent.run_tool("run_command", {"command": "git commit -m x"})
+    assert out.startswith("Blocked: use git_commit")
 
 
 def test_run_tool_passes_commands_through():

@@ -3,6 +3,10 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Added
+- Core git back: `git_status`, `git_diff`, `git_commit` agent tools plus `/status`, `/diff [--staged]` (changed-files browser), `/commit` (auto-drafted Conventional message with y/e/n, diff preview, approval), `/log` slash commands, and zero-LLM fast paths for `status`/`diff`/`log`. Reads are plan-mode safe and skip approval (`git status/diff/log`); raw `git commit` and destructive git (`reset --hard`, `clean`) stay blocked in favor of the tools; push/pull flow through normal command approval.
+
 ## [1.4.7] - 2026-09-17
 ### Added
 - Image attach: `@screenshot.png` / `@mock.jpg` sends the image to the model (png, jpg/jpeg, gif, webp, up to 8MB, max 5 per turn). Works on vision-capable models (OpenAI, Anthropic, Groq/OpenRouter vision models, Ollama vision models); text + `<image>` placeholder stays in context, base64 never touches saved sessions/history. Bare `@img.png` asks what to do, like file attaches.

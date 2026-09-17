@@ -391,7 +391,7 @@ def run(messages, user_input):
 
         round_entries = trace[round_start:]
         sig = tuple(sorted((t.get("tool"), str(t.get("detail"))) for t in round_entries))
-        progressed = any(t.get("tool") in ("write_file", "edit_file", "apply_edits") and t.get("success") for t in round_entries)
+        progressed = any(t.get("tool") in ("write_file", "edit_file", "apply_edits", "git_commit") and t.get("success") for t in round_entries)
         if sig and sig == prev_sig and not progressed:
             stall_count += 1
         else:
@@ -428,7 +428,7 @@ def run(messages, user_input):
                 summary = _build_summary(trace, content, user_input)
                 return content, trace, summary
 
-        only_inspect = bool(round_entries) and all(t.get("tool") in ("list_files", "read_file", "search_files") for t in round_entries)
+        only_inspect = bool(round_entries) and all(t.get("tool") in ("list_files", "read_file", "search_files", "git_status", "git_diff") for t in round_entries)
         if only_inspect:
             inspect_streak += 1
         else:

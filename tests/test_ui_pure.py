@@ -36,7 +36,7 @@ def test_docs_cover_core_workflows():
     from hazzel.docs import get_sections
 
     body = "\n".join(line for _, lines in get_sections() for line in lines)
-    for keyword in ("/model", "/plan", "/undo", "@"):
+    for keyword in ("/model", "/status", "/commit", "/plan", "/undo", "@"):
         assert keyword in body
 
 

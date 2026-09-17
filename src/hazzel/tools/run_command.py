@@ -10,6 +10,7 @@ _SHELL_OPS = {";", "&&", "||", "|"}
 
 _SAFE_BINARIES = frozenset({"ls", "pwd", "echo", "cat", "head", "tail", "wc", "file", "uname", "whoami", "date", "basename", "dirname", "realpath", "printf", "true"})
 _SAFE_WINDOWS_BINARIES = frozenset({"dir", "type", "cls", "ver", "echo"})
+_SAFE_GIT_SUBCOMMANDS = frozenset({"status", "diff", "log"})
 
 
 def is_safe_command(command):
@@ -31,6 +32,8 @@ def is_safe_command(command):
     if first in _SAFE_BINARIES:
         return True
     if wincompat.is_windows() and first.lower() in _SAFE_WINDOWS_BINARIES:
+        return True
+    if first == "git" and len(tokens) >= 2 and tokens[1] in _SAFE_GIT_SUBCOMMANDS:
         return True
     return False
 

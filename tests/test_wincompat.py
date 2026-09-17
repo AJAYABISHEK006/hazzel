@@ -112,7 +112,7 @@ def test_win_input_ctrl_c_and_extended(monkeypatch):
 def test_safe_commands_windows(monkeypatch):
     _windows(monkeypatch)
     assert is_safe_command("dir") is True
-    assert is_safe_command("git status") is False
+    assert is_safe_command("git status") is True
     assert is_safe_command("rm -rf /") is False
 
 

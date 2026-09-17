@@ -149,6 +149,59 @@ def main(argv=None):
             handle_model_command()
             continue
         low_in = user_input.strip().lower()
+        if low_in in ("/status", "status"):
+            from hazzel import git as _git
+            ok, out, branch = _git.status_porcelain()
+            if not ok:
+                ui.show_error(out)
+                continue
+            ui.show_git_status(branch, out)
+            continue
+        if low_in.startswith("/diff") or low_in == "diff":
+            staged = "--staged" in low_in or "staged" in low_in.split()
+            from hazzel import git as _git
+            ok, files, err = _git.changed_files(staged)
+            if not ok:
+                ui.show_error(err)
+                continue
+            branch = _git.branch_current()
+            if not files:
+                ui.show_git_file_list(files, staged, branch)
+                continue
+            if not sys.stdin.isatty():
+                ui.show_git_file_list(files, staged, branch)
+                for i, f in enumerate(files):
+                    dok, body = _git.diff_file(f["key"], staged)
+                    ui.show_git_file_diff(f["path"], body if dok else f"Diff failed: {body}", staged, f"{i + 1}/{len(files)} ")
+                continue
+            ui.show_git_file_list(files, staged, branch)
+            sel = ui.prompt_diff_selection(len(files))
+            if sel is None or sel == "invalid":
+                continue
+            f = files[sel]
+            dok, body = _git.diff_file(f["key"], staged)
+            ui.show_git_file_diff(f["path"], body if dok else f"Diff failed: {body}", staged, f"{sel + 1}/{len(files)} ")
+            continue
+        if low_in.startswith("/commit"):
+            msg = user_input.strip()[len("/commit"):].strip().strip("\"'")
+            from hazzel.tools.git_commit import git_commit as _gc
+            ui.show_git_commit(_gc(msg or None))
+            continue
+        if low_in.startswith("/log") or low_in == "log":
+            parts_l = user_input.strip().split()
+            n = 10
+            if len(parts_l) > 1:
+                try:
+                    n = max(1, min(20, int(parts_l[1])))
+                except ValueError:
+                    n = 10
+            from hazzel import git as _git
+            ok, out = _git.log_entries(n)
+            if not ok:
+                ui.show_error(out)
+                continue
+            ui.show_git_log(out, _git.branch_current())
+            continue
         parts_plan = user_input.strip().lower().split()
         if parts_plan and parts_plan[0] == "/plan":
             arg = parts_plan[1] if len(parts_plan) > 1 else ""

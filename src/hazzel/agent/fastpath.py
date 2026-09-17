@@ -256,11 +256,25 @@ def try_fast_path(messages, user_input):
         if pkgs:
             return _fast_install(messages, user_input, pkgs)
 
+    if re.match(r"^(?:git\s+)?status[.!?]*$", low):
+        result = run_tool("git_status", {})
+        return _fast_reply(messages, user_input, str(result), _fast_trace("git_status", "status", str(result), True))
+    if re.match(r"^(?:git\s+)?diff(?:\s+staged)?[.!?]*$", low):
+        staged = "staged" in low
+        result = run_tool("git_diff", {"staged": staged})
+        return _fast_reply(messages, user_input, str(result), _fast_trace("git_diff", "staged" if staged else "", str(result), True))
+    if re.match(r"^(?:git\s+)?log(?:\s+\S+)?[.!?]*$", low):
+        from hazzel import git as _git
+
+        ok, out = _git.log_entries(10)
+        result = out if ok else "Not a git repo here."
+        return _fast_reply(messages, user_input, str(result), _fast_trace("git_log", "log", str(result), True))
+
     match = re.match(r"^(?:(?:now|please)\s+)?(?:run|execute)\s+(.+?)\s*$", text, re.IGNORECASE)
     if match:
         command = match.group(1).strip().rstrip(".!?")
         if command:
             first = command.split()[0].lower() if command.split() else ""
-            if first in ("python", "python3", "pytest", "pip", "npm", "npx", "node", "cargo", "go", "make", "ls", "ruff"):
+            if first in ("python", "python3", "pytest", "pip", "npm", "npx", "node", "cargo", "go", "make", "git", "ls", "ruff"):
                 return _fast_run(messages, user_input, command)
     return None

@@ -7,6 +7,9 @@ from hazzel import mcp as _mcp
 from hazzel.tools.apply_edits import apply_edits
 from hazzel.tools.edit_file import edit_file
 from hazzel.tools.fetch_url import fetch_url
+from hazzel.tools.git_commit import git_commit
+from hazzel.tools.git_diff import git_diff
+from hazzel.tools.git_status import git_status
 from hazzel.tools.web_search import web_search
 from hazzel.tools.list_files import list_files
 from hazzel.tools.read_file import read_file
@@ -53,7 +56,7 @@ def _active_tools():
 
 
 def _plan_blocked(tool_name, arguments):
-    if tool_name in ("write_file", "edit_file", "apply_edits", "run_command"):
+    if tool_name in ("write_file", "edit_file", "apply_edits", "run_command", "git_commit"):
         return True
     if tool_name == "mcp":
         # Discovery is read-only; calls may run third-party code.
@@ -72,7 +75,7 @@ def _is_parallel_safe(tool_name, arguments):
 def _tool_detail(tool_name, arguments):
     detail = arguments.get(
         "pattern",
-        arguments.get("path", arguments.get("url", arguments.get("command", ""))),
+        arguments.get("path", arguments.get("url", arguments.get("command", arguments.get("message", "")))),
     )
     if tool_name == "apply_edits" and isinstance(arguments, dict):
         paths = []
@@ -103,7 +106,7 @@ def _tool_detail(tool_name, arguments):
 
 
 def _tool_cache_key(tool_name, arguments, detail):
-    if tool_name in ("read_file", "list_files", "search_files", "web_search", "fetch_url", "skill"):
+    if tool_name in ("read_file", "list_files", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill"):
         return (tool_name, str(detail), str(arguments.get("offset", "")), str(arguments.get("limit", "")), str(arguments.get("pattern", "")))
     if tool_name == "mcp":
         # Discovery is cacheable; calls may have side effects — never cache.
@@ -171,7 +174,10 @@ def _finalize_result(result):
         "edits cancelled",
         "applied nothing",
         "write cancelled",
+        "commit cancelled",
+        "branch cancelled",
         "blocked:",
+        "not a git repo",
     ))
     match = re.search(r"exit code (\d+)", low)
     exit_code = int(match.group(1)) if match else None
@@ -205,6 +211,9 @@ _TOOL_ALIASES = {
     "shell": "run_command",
     "exec": "run_command",
     "run": "run_command",
+    "status": "git_status",
+    "diff": "git_diff",
+    "commit": "git_commit",
     "fetch": "fetch_url",
     "fetch_url": "fetch_url",
     "fetch_urls": "fetch_url",
@@ -285,6 +294,16 @@ def _coerce_tool_args(tool_name, arguments):
                     args["name"] = args[k]
                     break
         args.setdefault("name", "")
+    elif tool_name == "git_diff":
+        if not isinstance(args.get("staged"), bool):
+            args["staged"] = str(args.get("staged", "")).lower() in ("1", "true", "yes", "staged")
+        if not isinstance(args.get("path"), str) or not args.get("path"):
+            args["path"] = "."
+    elif tool_name == "git_commit":
+        if not isinstance(args.get("message"), str):
+            args["message"] = ""
+        if "files" in args and not isinstance(args.get("files"), (list, str)):
+            args["files"] = None
     elif tool_name == "mcp":
         if "action" not in args:
             for k in ("op", "cmd", "verb"):
@@ -399,7 +418,16 @@ def run_tool(tool_name, arguments):
             return apply_edits(arguments["edits"])
         if tool_name == "run_command":
             cmd = arguments["command"]
+            low = str(cmd).strip().lower()
+            if low.startswith("git commit") or "reset --hard" in low or low.startswith("git clean"):
+                return "Blocked: use git_commit instead of raw git writes. Destructive git (reset --hard, clean) is disabled."
             return run_command(cmd, timeout=arguments.get("timeout"), cwd=arguments.get("cwd"), description=arguments.get("description"))
+        if tool_name == "git_status":
+            return git_status()
+        if tool_name == "git_diff":
+            return git_diff(arguments.get("staged", False), arguments.get("path", ".") or ".")
+        if tool_name == "git_commit":
+            return git_commit(arguments.get("message"), arguments.get("files"))
         if tool_name == "web_search":
             query = arguments.get("query", "")
             if not query:

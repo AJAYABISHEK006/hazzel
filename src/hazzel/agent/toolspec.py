@@ -17,14 +17,14 @@ TOOLS
   read    — file contents
   write   — new files or full rewrites
   edit    — surgical replacements (old → new)
-  run     — shell commands (build, test, grep, anything)
+   run     — shell commands (build, test, grep, git, anything)
 
 RULES
 - edit: match old text exactly. Small, unique blocks.
   Batch edits to the same file into one call.
 - write: only for files that don't exist yet or need a full
   rewrite. Never use it to "fix" a small section.
-- run: use for discovery (ls, find, grep) as much as
+- run: use for discovery (ls, find, grep, git log) as much as
   for execution. Knowing the lay of the land is free.
 - Show file paths when you change them. The user should always
   know what you touched.
@@ -135,6 +135,30 @@ TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "git_status",
+            "description": "Show git working-tree status (branch + porcelain). Read-only.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_diff",
+            "description": "Show git diff for unstaged or staged changes. Read-only.",
+            "parameters": {"type": "object", "properties": {"staged": {"type": "boolean"}, "path": {"type": "string"}}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_commit",
+            "description": "Commit changes. Omit message or pass 'suggest' to auto-draft from diff (asks y/e/n). Shows diff and asks approval. Use instead of raw git commit.",
+            "parameters": {"type": "object", "properties": {"message": {"type": "string"}, "files": {"type": "array", "items": {"type": "string"}}}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "web_search",
             "description": "Search the public web (no key). Read-only, returns up to count titles, URLs, and snippets. Then fetch the best hits with fetch_url.",
             "parameters": {"type": "object", "properties": {"query": {"type": "string"}, "count": {"type": "integer"}}, "required": ["query"]},
@@ -166,9 +190,9 @@ TOOLS = [
     },
 ]
 
-TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "web_search", "fetch_url", "skill", "mcp"])
+TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "git_status", "git_diff", "git_commit", "web_search", "fetch_url", "skill", "mcp"])
 
-PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "web_search", "fetch_url", "skill", "mcp"])
+PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill", "mcp"])
 
 PLAN_TOOLS = [t for t in TOOLS if t.get("function", {}).get("name") in PLAN_TOOL_NAMES]
 
@@ -194,6 +218,6 @@ PRINT_BLOCKED_MESSAGE = (
     "no writes or runs until the user re-runs with -y/--yes."
 )
 
-PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "web_search", "fetch_url", "skill"})
+PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill"})
 PARALLEL_MAX_WORKERS = 8
 PARALLEL_TOOL_TIMEOUT = 60.0

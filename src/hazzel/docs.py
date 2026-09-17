@@ -24,6 +24,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
         "Slash commands",
         [
             "/model — switch provider/model   /help — quick overview   /docs — this guide",
+            "/status /diff /commit /log — git core (push/pull via ! with approval)",
             "Run shell commands with ! or ask Hazzel to run them (approval first).",
             "/plan on|off — read-only exploration   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
             "/undo [n] — revert file changes   /retry — re-run last message",
@@ -47,16 +48,22 @@ SECTIONS: list[tuple[str, list[str]]] = [
     (
         "Approvals and safety",
         [
-            "Edits show a diff first. Shell commands ask first (read-only ones like ls skip the queue).",
-            "Destructive commands stay blocked.",
+            "Edits show a diff first. Shell commands ask first (read-only ones like ls and git status skip the queue).",
+            "Destructive git (reset --hard, --force) stays blocked — use the git tools.",
             "Everything runs inside your project root. /undo restores any file change.",
+        ],
+    ),
+    (
+        "Git workflow",
+        [
+            "Typical flow: edit → /commit (drafts a message, y/e/n) → !git push.",
+            "/status and /diff [--staged] inspect; /log shows recents.",
         ],
     ),
     (
         "Shell workflow",
         [
             "Typical flow: edit → run tests with !pytest -q → fix what fails.",
-            "Use your own shell for version control; Hazzel never touches it.",
         ],
     ),
     (

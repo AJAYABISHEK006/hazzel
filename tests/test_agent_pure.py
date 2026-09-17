@@ -100,12 +100,14 @@ def test_plan_blocks_writes(monkeypatch):
     assert agent.run_tool("write_file", {"path": "a.py", "content": "x"}).startswith("Blocked: plan mode")
     assert agent.run_tool("edit_file", {"path": "a.py", "old_text": "x", "new_text": "y"}).startswith("Blocked: plan mode")
     assert agent.run_tool("run_command", {"command": "ls"}).startswith("Blocked: plan mode")
-    assert {t["function"]["name"] for t in agent.PLAN_TOOLS} == {"list_files", "read_file", "search_files", "web_search", "fetch_url", "skill", "mcp"}
+    assert agent.run_tool("git_commit", {"message": "x"}).startswith("Blocked: plan mode")
+    assert {t["function"]["name"] for t in agent.PLAN_TOOLS} == {"list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill", "mcp"}
 
 
 def test_plan_allows_reads(monkeypatch):
     monkeypatch.setattr(config, "is_plan_enabled", lambda: True)
     assert "Blocked" not in agent.run_tool("search_files", {"pattern": "x"})
+    assert "Blocked" not in agent.run_tool("git_status", {})
     monkeypatch.setattr(config, "is_plan_enabled", lambda: False)
     assert "Blocked" not in agent.run_tool("search_files", {"pattern": "x"})
 

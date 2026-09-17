@@ -31,7 +31,7 @@ def _build_summary_inner(trace, response_content, user_input):
         result = t["result"]
         if name == "read_file" and success and not t.get("cached"):
             inspected.append(detail)
-        elif name in ("list_files", "search_files", "web_search", "fetch_url", "skill") and success and not t.get("cached"):
+        elif name in ("list_files", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill") and success and not t.get("cached"):
             inspected.append(detail or name)
         elif name == "write_file" and success:
             created.append(detail)
@@ -39,6 +39,9 @@ def _build_summary_inner(trace, response_content, user_input):
         elif name in ("edit_file", "apply_edits") and success:
             changed.append(detail)
             actions.append(f"{name} {detail}".strip())
+        elif name == "git_commit" and success:
+            actions.append(f"git_commit {detail}".strip())
+            changed.append(detail or "commit")
         elif name == "run_command":
             actions.append(f"run_command {detail}".strip())
             if any(k in detail for k in ["pytest", "test", "build", "lint", "typecheck", "ruff", "mypy", "tsc", "npm", "cargo"]):
