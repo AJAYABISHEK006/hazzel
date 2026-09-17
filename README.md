@@ -109,7 +109,7 @@ If you want the most feature-heavy agent, there are better options. If you want 
 
 ## Status
 
-Early-stage (v1.4.6). Expect rough edges.
+Early-stage (v1.4.7). Expect rough edges.
 
 No deploys, no background agents. It doesn't replace your editor — it stays in the terminal next to it.
 

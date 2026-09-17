@@ -100,7 +100,7 @@ def test_plan_blocks_writes(monkeypatch):
     assert agent.run_tool("write_file", {"path": "a.py", "content": "x"}).startswith("Blocked: plan mode")
     assert agent.run_tool("edit_file", {"path": "a.py", "old_text": "x", "new_text": "y"}).startswith("Blocked: plan mode")
     assert agent.run_tool("run_command", {"command": "ls"}).startswith("Blocked: plan mode")
-    assert {t["function"]["name"] for t in agent.PLAN_TOOLS} == {"list_files", "read_file", "search_files", "web_search", "fetch_url", "skill"}
+    assert {t["function"]["name"] for t in agent.PLAN_TOOLS} == {"list_files", "read_file", "search_files", "web_search", "fetch_url", "skill", "mcp"}
 
 
 def test_plan_allows_reads(monkeypatch):

@@ -3,9 +3,10 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.4.7] - 2026-09-17
 ### Added
 - Image attach: `@screenshot.png` / `@mock.jpg` sends the image to the model (png, jpg/jpeg, gif, webp, up to 8MB, max 5 per turn). Works on vision-capable models (OpenAI, Anthropic, Groq/OpenRouter vision models, Ollama vision models); text + `<image>` placeholder stays in context, base64 never touches saved sessions/history. Bare `@img.png` asks what to do, like file attaches.
+- Minimal MCP stdio transport: configure servers in `.hazzel/mcp.json` (`{"mcpServers": {"name": {"command": ..., "args": [...], "env": {...}, "timeout": 30}}}`) or `~/.config/hazzel/mcp.json` (project wins on clash, stdlib only, no new dependencies). Single skill-like `mcp` agent tool — `list` discovers servers/tools read-only (plan-mode and `hazzel -p` safe), `call` runs one remote tool; processes spawn lazily on first use with initialize handshake, per-server timeouts, and clean shutdown. `/mcp`, `/mcp <server>`, `/mcp <server> <tool>` in the REPL; server names appear in the system prompt without spawning.
 
 ## [1.4.6] - 2026-09-17
 ### Added

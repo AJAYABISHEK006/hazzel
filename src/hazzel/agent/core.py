@@ -4,6 +4,7 @@ import json
 from hazzel import config
 from hazzel import ui
 from hazzel import skills as _skills
+from hazzel import mcp as _mcp
 from hazzel.mentions import (
     build_user_content,
     collect_mention_images,
@@ -155,6 +156,12 @@ def run(messages, user_input):
         skills_note = ""
     if skills_note and task_messages and task_messages[0].get("role") == "system":
         task_messages[0] = {"role": "system", "content": (task_messages[0].get("content") or "") + skills_note}
+    try:
+        mcp_note = _mcp.mcp_prompt()
+    except Exception:
+        mcp_note = ""
+    if mcp_note and task_messages and task_messages[0].get("role") == "system":
+        task_messages[0] = {"role": "system", "content": (task_messages[0].get("content") or "") + mcp_note}
 
     trace = []
     seen_reads = set()

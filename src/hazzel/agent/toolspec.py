@@ -156,11 +156,19 @@ TOOLS = [
             "parameters": {"type": "object", "properties": {"name": {"type": "string"}}},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp",
+            "description": "Use configured external MCP servers. list discovers servers/tools (read-only); call runs one server tool with arguments. Configure in .hazzel/mcp.json.",
+            "parameters": {"type": "object", "properties": {"action": {"type": "string"}, "server": {"type": "string"}, "tool": {"type": "string"}, "arguments": {"type": "object"}}},
+        },
+    },
 ]
 
-TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "web_search", "fetch_url", "skill"])
+TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "web_search", "fetch_url", "skill", "mcp"])
 
-PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "web_search", "fetch_url", "skill"])
+PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "web_search", "fetch_url", "skill", "mcp"])
 
 PLAN_TOOLS = [t for t in TOOLS if t.get("function", {}).get("name") in PLAN_TOOL_NAMES]
 

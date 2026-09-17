@@ -3,6 +3,7 @@ import time
 
 from hazzel import config
 from hazzel import skills as _skills
+from hazzel import mcp as _mcp
 from hazzel.tools.apply_edits import apply_edits
 from hazzel.tools.edit_file import edit_file
 from hazzel.tools.fetch_url import fetch_url
@@ -54,6 +55,13 @@ def _active_tools():
 def _plan_blocked(tool_name, arguments):
     if tool_name in ("write_file", "edit_file", "apply_edits", "run_command"):
         return True
+    if tool_name == "mcp":
+        # Discovery is read-only; calls may run third-party code.
+        try:
+            action = str((arguments or {}).get("action") or "list").strip().lower()
+        except Exception:
+            action = "list"
+        return action == "call"
     return False
 
 
@@ -82,12 +90,30 @@ def _tool_detail(tool_name, arguments):
             detail = ", ".join(str(t) for t in targets[:2])
     if tool_name == "skill" and isinstance(arguments, dict):
         detail = str(arguments.get("name", "") or "").strip()
+    if tool_name == "mcp" and isinstance(arguments, dict):
+        action = str(arguments.get("action", "") or "list").strip() or "list"
+        server = str(arguments.get("server", "") or "").strip()
+        tool = str(arguments.get("tool", "") or "").strip()
+        detail = action
+        if server:
+            detail += f" {server}"
+            if tool:
+                detail += f"/{tool}"
     return detail
 
 
 def _tool_cache_key(tool_name, arguments, detail):
     if tool_name in ("read_file", "list_files", "search_files", "web_search", "fetch_url", "skill"):
         return (tool_name, str(detail), str(arguments.get("offset", "")), str(arguments.get("limit", "")), str(arguments.get("pattern", "")))
+    if tool_name == "mcp":
+        # Discovery is cacheable; calls may have side effects — never cache.
+        try:
+            action = str((arguments or {}).get("action") or "list").strip().lower()
+        except Exception:
+            return None
+        if action != "list":
+            return None
+        return (tool_name, str(detail), "", "", "")
     return None
 
 
@@ -194,6 +220,9 @@ _TOOL_ALIASES = {
     "skills": "skill",
     "load_skill": "skill",
     "loadskill": "skill",
+    "mcp_list": "mcp",
+    "mcplist": "mcp",
+    "list_mcp": "mcp",
 }
 
 
@@ -256,6 +285,32 @@ def _coerce_tool_args(tool_name, arguments):
                     args["name"] = args[k]
                     break
         args.setdefault("name", "")
+    elif tool_name == "mcp":
+        if "action" not in args:
+            for k in ("op", "cmd", "verb"):
+                if args.get(k) is not None:
+                    args["action"] = args[k]
+                    break
+        args.setdefault("action", "list")
+        if "server" not in args:
+            for k in ("server_name", "name", "target"):
+                if args.get(k) is not None:
+                    args["server"] = args[k]
+                    break
+        args.setdefault("server", "")
+        if "tool" not in args:
+            for k in ("tool_name",):
+                if args.get(k) is not None:
+                    args["tool"] = args[k]
+                    break
+        args.setdefault("tool", "")
+        if "arguments" not in args:
+            for k in ("args", "params", "input", "parameters"):
+                if isinstance(args.get(k), dict):
+                    args["arguments"] = args[k]
+                    break
+        if not isinstance(args.get("arguments"), dict):
+            args["arguments"] = {}
     elif tool_name in ("write_file", "edit_file") and "path" not in args:
         for k in ("file", "filename", "filepath", "target"):
             if args.get(k) is not None:
@@ -357,6 +412,20 @@ def run_tool(tool_name, arguments):
             return fetch_url(arguments.get("url", ""), arguments.get("max_chars", 2000), arguments.get("query", ""), urls=arguments.get("urls"))
         if tool_name == "skill":
             return _skills.skill_tool(arguments.get("name", "") or "")
+        if tool_name == "mcp":
+            action = arguments.get("action", "list")
+            if not isinstance(action, str) or not action.strip():
+                action = "list"
+            server = arguments.get("server", "")
+            if not isinstance(server, str):
+                server = ""
+            tool = arguments.get("tool", "")
+            if not isinstance(tool, str):
+                tool = ""
+            call_args = arguments.get("arguments", {})
+            if not isinstance(call_args, dict):
+                call_args = {}
+            return _mcp.mcp_tool(action, server, tool, call_args)
         return f"Unknown tool: {tool_name}. Valid tools: {', '.join(sorted(TOOL_NAMES))}."
     except KeyboardInterrupt:
         raise
