@@ -101,7 +101,7 @@ Type `/` to filter live, `@` to attach a file. `/docs` prints the full guide wit
 
 ## What it's honest about not being
 
-v1.4.7, early-stage. No background agents, no autonomous PRs, no cloud dashboard, no session across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose. If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
+v1.4.8, early-stage. No background agents, no autonomous PRs, no cloud dashboard, no session across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose. If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
 
 ## Contributing
 
