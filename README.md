@@ -52,6 +52,7 @@ If you want the most feature-heavy agent, there are better options. If you want 
 - Multiline input: Ctrl+J for newlines, full multiline paste.
 - Extras: `/docs` prints the full usage guide, `/init` drafts an `AGENTS.md` project map, `/export` saves the transcript, `/copy` grabs the last reply, `/retry` re-runs your last message.
 - Streams responses with per-turn token usage (`/usage`).
+- One-shot scripting: `hazzel -p "summarize this diff" < changes.diff` runs once and prints the reply — read-only by default, `-y` allows writes/runs, `--output-format json` for scripts.
 - Real cost visibility: provider-reported tokens priced into dollars, persisted locally (`~/.config/hazzel/usage.jsonl`) across restarts — `/usage today|week|month`, `/usage --by-model`, `/usage export`, `/budget` warns (never blocks). Unknown models show token counts with cost `unknown`, never a guessed price.
 
 ## Providers

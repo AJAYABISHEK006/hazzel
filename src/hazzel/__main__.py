@@ -73,16 +73,19 @@ VERSION = _version()
 
 def main(argv=None):
     global _last_summary, _last_trace, _last_response, _last_user_input, _pending_prefill
-    args = list(sys.argv[1:] if argv is None else argv)
-    if args and args[0] in ("--version", "-V"):
+    from hazzel import print_mode as _print_mode
+
+    parser = _print_mode.build_parser()
+    args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
+    if args.version:
         console.print(f"Hazzel {VERSION}")
         return
-    if args and args[0] in ("--help", "-h"):
-        console.print("Hazzel — terminal coding agent. Usage: python -m hazzel [--version|--help]")
-        return
-    if args:
-        ui.show_error(f"Unknown option: {args[0]}. Try --help.")
-        return
+    if args.prompt is not None:
+        piped = _print_mode.read_piped_stdin()
+        final = _print_mode.combine_prompt(args.prompt, piped)
+        if not (final or "").strip():
+            parser.error("no prompt: pass TEXT to -p/--print or pipe stdin (e.g. `git diff | hazzel -p`).")
+        raise SystemExit(_print_mode.run_print(final, approve=args.approve, output_format=args.output_format))
     wincompat.enable_ansi()
     ui.show_welcome(config.get_current_display_name(), config.PROJECT_ROOT)
     if config.should_show_star_nudge():

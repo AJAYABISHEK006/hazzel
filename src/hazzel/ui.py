@@ -818,6 +818,8 @@ def begin_turn(text="Working…"):
 
 def show_loader(text="Working…"):
     global _loader
+    if _print_mode:
+        return
     if _loader is not None:
         _loader.update(_live_body(text))
         return
@@ -988,6 +990,28 @@ def set_quiet(value=True):
 
 def is_quiet():
     return _quiet
+
+
+# Print (non-interactive) mode: stdout carries only the final answer, so all
+# progress UI stays silent. _auto_approve mirrors `hazzel -p -y`.
+_print_mode = False
+_auto_approve = False
+
+
+def set_print_mode(value=True):
+    global _print_mode
+    _print_mode = bool(value)
+    return _print_mode
+
+
+def is_print_mode():
+    return _print_mode
+
+
+def set_auto_approve(value=True):
+    global _auto_approve
+    _auto_approve = bool(value)
+    return _auto_approve
 
 
 def show_turn_from_trace(user_command, trace, summary):
@@ -1201,6 +1225,8 @@ def show_error(message):
 
 
 def confirm(prompt):
+    if _print_mode:
+        return _auto_approve
     was_active = _pause_loader()
     try:
         answer = input(f"\n{prompt} [y/N]: ")
@@ -1213,6 +1239,8 @@ def confirm(prompt):
 
 
 def show_diff(diff):
+    if _print_mode:
+        return
     was_active = _pause_loader()
     try:
         rule()
@@ -1232,6 +1260,8 @@ VIEW_MAX_LINES = 2000
 
 
 def show_file_viewer(display_path, body, total_lines, shown_lines):
+    if _print_mode:
+        return
     end_turn()
     rule()
     console.print(Text(f"  {display_path}  ·  {total_lines} lines", style="dim"))

@@ -6,7 +6,7 @@ from hazzel import ui
 from hazzel.config import resolve_project_path
 from hazzel.tools.search_files import missing_file_message
 
-from .dispatch import run_tool
+from .dispatch import is_print_readonly, run_tool
 from .history import _build_summary, _commit_history
 from .state import _LAST_TARGET, _looks_like_path, _note_target
 
@@ -27,8 +27,19 @@ def _plan_defers():
         return False
 
 
-def _fast_delete(messages, user_input, target):
+def _mutating_defers():
+    # Plan mode and read-only print mode both keep zero-LLM mutating shortcuts off,
+    # so the model turn (with its reduced tool set) handles them instead.
     if _plan_defers():
+        return True
+    try:
+        return is_print_readonly()
+    except Exception:
+        return False
+
+
+def _fast_delete(messages, user_input, target):
+    if _mutating_defers():
         return None
     try:
         resolved = resolve_project_path(target)
@@ -46,7 +57,7 @@ def _fast_delete(messages, user_input, target):
 
 
 def _fast_create(messages, user_input, target):
-    if _plan_defers():
+    if _mutating_defers():
         return None
     try:
         if resolve_project_path(target).exists():
@@ -84,6 +95,10 @@ def _fast_read(messages, user_input, target):
     if total == 0:
         return _fast_reply(messages, user_input, f"`{target}` is empty.", _fast_trace("read_file", target, "(empty file)", True))
     shown = lines[:ui.VIEW_MAX_LINES] if len(lines) > ui.VIEW_MAX_LINES else lines
+    if ui.is_print_mode():
+        # No file viewer on a pipe — hand the content back as the reply instead.
+        content = run_tool("read_file", {"path": target})
+        return _fast_reply(messages, user_input, f"`{target}`:\n\n{content}", _fast_trace("read_file", target, f"({total} lines via print mode)", True))
     ui.show_file_viewer(target, "\n".join(shown), total, len(shown))
     _note_target(target)
     reply = f"Showed `{target}` ({total} lines) above — ask me anything about it."
@@ -119,7 +134,7 @@ def _parse_package_names(raw):
 
 
 def _fast_install(messages, user_input, pkgs):
-    if _plan_defers():
+    if _mutating_defers():
         return None
     command = "pip install " + " ".join(shlex.quote(p) for p in pkgs)
     result = run_tool("run_command", {"command": command})
@@ -132,7 +147,7 @@ def _fast_install(messages, user_input, pkgs):
 
 
 def _fast_run(messages, user_input, command):
-    if _plan_defers():
+    if _mutating_defers():
         return None
     result = run_tool("run_command", {"command": command})
     if isinstance(result, list):

@@ -19,6 +19,7 @@ from .dispatch import (
     _run_one_tool,
     _tool_cache_key,
     _tool_detail,
+    is_print_readonly,
 )
 from .fastpath import _fast_reply, _plan_defers, try_fast_path
 from .history import (
@@ -40,6 +41,7 @@ from .toolspec import (
     PARALLEL_MAX_WORKERS,
     PARALLEL_TOOL_TIMEOUT,
     PLAN_ADDENDUM,
+    PRINT_ADDENDUM,
     TOOL_NAMES,
 )
 
@@ -135,6 +137,12 @@ def run(messages, user_input):
     task_messages = messages + [{"role": "user", "content": user_input}]
     if _plan_defers() and task_messages and task_messages[0].get("role") == "system":
         task_messages[0] = {"role": "system", "content": (task_messages[0].get("content") or "") + PLAN_ADDENDUM}
+    try:
+        readonly_print = is_print_readonly()
+    except Exception:
+        readonly_print = False
+    if readonly_print and task_messages and task_messages[0].get("role") == "system":
+        task_messages[0] = {"role": "system", "content": (task_messages[0].get("content") or "") + PRINT_ADDENDUM}
     try:
         skills_note = _skills.skills_prompt()
     except Exception:

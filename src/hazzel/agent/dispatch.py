@@ -18,13 +18,32 @@ from .toolspec import (
     PARALLEL_SAFE,
     PLAN_BLOCKED_MESSAGE,
     PLAN_TOOLS,
+    PRINT_BLOCKED_MESSAGE,
     TOOL_NAMES,
     TOOLS,
 )
 
 
+# Print (non-interactive) approvals. None = interactive REPL session.
+# False = `hazzel -p` without -y: mutating tools are blocked, model sees read-only tools.
+# True = `hazzel -p -y`: mutating tools run with approvals pre-granted.
+_print_approve = None
+
+
+def set_print_approvals(approve):
+    global _print_approve
+    _print_approve = None if approve is None else bool(approve)
+    return _print_approve
+
+
+def is_print_readonly():
+    return _print_approve is False
+
+
 def _active_tools():
     try:
+        if is_print_readonly():
+            return PLAN_TOOLS
         if config.is_plan_enabled():
             return PLAN_TOOLS
     except Exception:
@@ -306,6 +325,8 @@ def run_tool(tool_name, arguments):
     try:
         if config.is_plan_enabled() and _plan_blocked(tool_name, arguments):
             return PLAN_BLOCKED_MESSAGE
+        if is_print_readonly() and _plan_blocked(tool_name, arguments):
+            return PRINT_BLOCKED_MESSAGE
     except Exception:
         pass
     try:

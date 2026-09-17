@@ -17,6 +17,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
             "3. Approve (y) or cancel (n). Nothing mutates without you.",
             "Smallest change wins: ask for one thing at a time for best results.",
             "Ctrl+J adds a newline, Enter sends; pasting keeps every line.",
+            "`hazzel -p \"question\"` answers once and exits (pipe stdin in; `-y` allows writes, `--output-format json` for scripts).",
         ],
     ),
     (

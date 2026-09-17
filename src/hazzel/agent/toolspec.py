@@ -174,6 +174,18 @@ PLAN_BLOCKED_MESSAGE = (
     "no writes, runs, or commits until the user runs /plan off."
 )
 
+PRINT_ADDENDUM = (
+    "\n\nPrint mode is ON (non-interactive, read-only). You have no file-write or shell tools. "
+    "Do NOT claim you created, edited, or ran anything — describe what you WOULD do (exact "
+    "edits or commands) and tell the user to re-run with -y/--yes to apply it. "
+    "Keep the answer concise for terminal output."
+)
+
+PRINT_BLOCKED_MESSAGE = (
+    "Blocked: print mode is read-only without -y/--yes. Describe the change instead — "
+    "no writes or runs until the user re-runs with -y/--yes."
+)
+
 PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "web_search", "fetch_url", "skill"})
 PARALLEL_MAX_WORKERS = 8
 PARALLEL_TOOL_TIMEOUT = 60.0
