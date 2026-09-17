@@ -476,8 +476,28 @@ def get_input(messages=None, prefill=""):
 
         _used0, _window0 = _agent0.context_usage(messages)
         _static_tok = format_context_meter(_used0, _window0)
+        try:
+            from .pricing import format_usd as _fmt_usd
+            from .tokens import format_count as _fmt_count
+            _su = _agent0.get_session_usage() or {}
+            _sess_bits = ""
+            if _su.get("calls"):
+                _stotal = (_su.get("input") or 0) + (_su.get("output") or 0)
+                _scost = _su.get("cost")
+                if _scost is None and _su.get("unknown"):
+                    _sess_bits = f"{_fmt_count(_stotal)} · unpriced"
+                else:
+                    _sess_bits = f"{_fmt_count(_stotal)} · {_fmt_usd(_scost)}"
+                    if _su.get("unknown"):
+                        _sess_bits += " +unpriced"
+                if _su.get("estimated"):
+                    _sess_bits += " ~est"
+            _static_sess = _sess_bits
+        except Exception:
+            _static_sess = ""
     except Exception:
         _static_tok = ""
+        _static_sess = ""
     try:
         tty.setraw(fd)
         termios.tcflush(fd, termios.TCIFLUSH)
@@ -552,10 +572,14 @@ def get_input(messages=None, prefill=""):
             _plan_bit = _static_plan_bit
             _goal_bit = _static_goal_bit
             _think_bit = _static_think_bit
+            try:
+                _sess_bit = f" · {_static_sess}" if _static_sess else ""
+            except NameError:
+                _sess_bit = ""
             if tok:
-                lines.append(f"  \x1b[2m{mid} · {tok}{_plan_bit}{_think_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
+                lines.append(f"  \x1b[2m{mid} · {tok}{_sess_bit}{_plan_bit}{_think_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
             else:
-                lines.append(f"  \x1b[2m{mid}{_plan_bit}{_think_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
+                lines.append(f"  \x1b[2m{mid}{_sess_bit}{_plan_bit}{_think_bit}{_goal_bit} · @ tag · ! bash · /exit{rst}")
 
             nlines = _visual_rows(lines)
             out = "\r\n".join(lines)
@@ -1442,6 +1466,7 @@ def show_usage(session, last=None, context=None):
 
 
 def _usage_body(session, last=None, context=None):
+    from .pricing import format_usd
     from .tokens import format_count
     sent = int(session.get("input") or 0)
     received = int(session.get("output") or 0)
@@ -1464,6 +1489,14 @@ def _usage_body(session, last=None, context=None):
     hero.append(f"{total:,}", style="white")
     hero.append(f"  tokens · {calls} call{'s' if calls != 1 else ''}", style="dim")
     yield hero
+    cost_line = Text()
+    cost_line.append("  cost  ", style="dim")
+    if session.get("unknown"):
+        cost_line.append(f"{format_usd(session.get('cost'))} across priced calls", style="white")
+        cost_line.append(f" · {session['unknown']} call{'s' if session['unknown'] != 1 else ''} unknown pricing", style="dim")
+    else:
+        cost_line.append(format_usd(session.get("cost")), style="white")
+    yield cost_line
     if context:
         try:
             ctx = Text()
@@ -1563,10 +1596,80 @@ def _show_usage_tab(session, last=None, context=None):
 def show_turn_usage(session):
     if not session or not session.get("calls"):
         return
+    from .pricing import format_usd
     from .tokens import format_count
     total = session.get("input", 0) + session.get("output", 0)
-    suffix = " ~" if session.get("estimated") else ""
-    console.print(Text(f"  {format_count(total)}{suffix} tokens used", style="dim"))
+    line = Text()
+    line.append("  ", style="dim")
+    line.append(f"{format_count(total)} tokens", style="dim")
+    cost = session.get("cost")
+    if cost is None and session.get("unknown"):
+        line.append("  ·  unpriced", style="dim")
+    else:
+        line.append(f"  ·  {format_usd(cost)} session", style="dim")
+        if session.get("unknown"):
+            line.append("  ·  +unpriced", style="dim")
+    if session.get("estimated"):
+        line.append("  ·  ~est", style="dim")
+    console.print(line)
+
+
+def show_budget_warning(lines):
+    if isinstance(lines, str):
+        lines = [lines]
+    for line in lines or []:
+        warn = Text()
+        warn.append("  budget  ", style="yellow")
+        warn.append(str(line), style="yellow")
+        console.print(warn)
+
+
+def show_usage_range(name, totals):
+    from .pricing import format_usd
+    from .tokens import format_count
+    console.print()
+    head = Text()
+    head.append(f"usage · {name}", style="white")
+    console.print(head)
+    console.print()
+    if not totals or not totals.get("calls"):
+        console.print(Text("  Nothing logged in this window yet.", style="dim"))
+        console.print()
+        return
+    total = totals.get("input", 0) + totals.get("output", 0)
+    console.print(Text(f"  {format_count(total)} tokens · {totals['calls']} calls · {totals.get('sessions', 0)} sessions", style="white"))
+    cost = Text()
+    cost.append("  cost  ", style="dim")
+    cost.append(format_usd(totals.get("cost")), style="white")
+    if totals.get("unknown"):
+        cost.append(f" · {totals['unknown']} calls unknown pricing", style="dim")
+    console.print(cost)
+    console.print()
+
+
+def show_by_model(groups):
+    from .pricing import format_usd
+    from .tokens import format_count
+    console.print()
+    head = Text()
+    head.append("usage · by model", style="white")
+    console.print(head)
+    console.print()
+    if not groups:
+        console.print(Text("  Nothing logged yet.", style="dim"))
+        console.print()
+        return
+    table = Table.grid(padding=(0, 2))
+    table.add_column(justify="left", style="white")
+    table.add_column(justify="right", style="dim", width=10)
+    table.add_column(justify="right", style="white", width=10)
+    table.add_column(justify="right", style="dim", width=12)
+    for (provider, model), agg in sorted(groups.items(), key=lambda kv: kv[1].get("cost", 0), reverse=True):
+        total = agg.get("input", 0) + agg.get("output", 0)
+        cost = format_usd(agg.get("cost")) if not agg.get("unknown") else f"{format_usd(agg.get('cost'))} +?"
+        table.add_row(f"{provider}/{model}", format_count(total), f"{agg.get('calls', 0)} calls", cost)
+    console.print(table)
+    console.print()
 
 
 def show_summary(summary, trace=None):

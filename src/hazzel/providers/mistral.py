@@ -1,5 +1,6 @@
 import json
-from .base import BaseProvider, ChatResponse, ToolCall, Usage, call_with_backoff
+import time
+from .base import BaseProvider, ChatResponse, ToolCall, Usage, UsageRecord, call_with_backoff, record_from_usage
 
 
 def _extract_usage(resp):
@@ -138,3 +139,20 @@ class MistralProvider(BaseProvider):
             if entry["name"]:
                 tool_calls.append(ToolCall(id=entry["id"] or f"call_{idx}", name=entry["name"], arguments=entry["args"] or "{}"))
         return ChatResponse(content="".join(parts) or None, tool_calls=tool_calls, usage=usage)
+
+
+def parse_usage(response, model, provider="mistral"):
+    inner = getattr(response, "usage", None)
+    if isinstance(inner, (Usage, UsageRecord)):
+        return record_from_usage(provider, model, inner)
+    usage = _extract_usage(response)
+    if not usage or (not usage.input_tokens and not usage.output_tokens):
+        return None
+    return UsageRecord(
+        provider=provider,
+        model=model,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        cached_tokens=usage.cached_tokens,
+        timestamp=time.time(),
+    )

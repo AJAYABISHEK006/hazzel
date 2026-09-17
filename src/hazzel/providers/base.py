@@ -64,6 +64,53 @@ class Usage:
 
 
 @dataclass
+class UsageRecord:
+    provider: str
+    model: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cached_tokens: int = 0
+    reasoning_tokens: int = 0
+    estimated: bool = False
+    timestamp: float = 0.0
+    session_id: str = ""
+    cost_usd: float | None = None
+
+    def to_dict(self):
+        return {
+            "provider": self.provider,
+            "model": self.model,
+            "input_tokens": int(self.input_tokens or 0),
+            "output_tokens": int(self.output_tokens or 0),
+            "cached_input_tokens": int(self.cached_tokens or 0),
+            "reasoning_tokens": int(self.reasoning_tokens or 0),
+            "estimated": bool(self.estimated),
+            "ts": float(self.timestamp or 0),
+            "session_id": self.session_id or "",
+            "cost_usd": self.cost_usd,
+        }
+
+
+def record_from_usage(provider, model, usage):
+    if isinstance(usage, UsageRecord):
+        usage.provider = provider
+        usage.model = model
+        return usage
+    if not isinstance(usage, Usage):
+        return None
+    if not usage.input_tokens and not usage.output_tokens:
+        return None
+    return UsageRecord(
+        provider=provider,
+        model=model,
+        input_tokens=usage.input_tokens,
+        output_tokens=usage.output_tokens,
+        cached_tokens=usage.cached_tokens,
+        timestamp=time.time(),
+    )
+
+
+@dataclass
 class ChatResponse:
     content: str | None
     tool_calls: list[ToolCall] = field(default_factory=list)

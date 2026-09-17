@@ -3,6 +3,10 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Added
+- Native cost and token visibility: normalized `UsageRecord` per provider adapter (`parse_usage`), dollar pricing (`pricing.py`, dated table + `custom_pricing` override, `unknown` shown honestly instead of guessed), append-only local log (`usage_store.py` → `~/.config/hazzel/usage.jsonl`, 90-day retention), `/usage today|week|month|--by-model|export|clear`, `/budget` warn-only thresholds, per-turn `tokens · session $` status line.
+
 ## [1.4.4] - 2026-09-16
 ### Fixed
 - `@` mention fuzzy test now matches the `hazzel.agent` package layout (`agnt`→`agent/` files); provider factory hardened (`get_provider` zero-arg, compat wiring, Ollama local-model fetch).

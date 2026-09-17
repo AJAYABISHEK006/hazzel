@@ -117,6 +117,9 @@ _api_keys: dict[str, str] = {}
 _plan_enabled = False
 _think_enabled = False
 _goal = None
+_budget = {"session_usd": None, "daily_usd": None, "warn_at_pct": 80}
+_custom_pricing = {}
+_usage_retain_days = 90
 
 MODEL = _model
 
@@ -145,7 +148,7 @@ def _get_config_file():
 
 
 def _load_config():
-    global _model, _provider, _display_name, MODEL, _plan_enabled, _think_enabled, _goal
+    global _model, _provider, _display_name, MODEL, _plan_enabled, _think_enabled, _goal, _budget, _custom_pricing, _usage_retain_days
     path = _get_config_file()
     if not path.exists():
         return
@@ -195,6 +198,50 @@ def _load_config():
         _goal["criteria"] = _goal["criteria"].strip()[:500]
     elif goal is None:
         _goal = None
+    budget = data.get("budget")
+    if isinstance(budget, dict):
+        _budget = {
+            "session_usd": _clean_budget_value(budget.get("session_usd")),
+            "daily_usd": _clean_budget_value(budget.get("daily_usd")),
+            "warn_at_pct": _clean_warn_pct(budget.get("warn_at_pct")),
+        }
+    custom = data.get("custom_pricing")
+    if isinstance(custom, dict):
+        cleaned = {}
+        for provider, models in custom.items():
+            if not isinstance(models, dict):
+                continue
+            for model, rates in models.items():
+                if not isinstance(rates, dict):
+                    continue
+                try:
+                    cleaned.setdefault(str(provider), {})[str(model)] = {
+                        k: float(v) for k, v in rates.items() if k in ("input", "output", "cached_input")
+                    }
+                except (TypeError, ValueError):
+                    continue
+        _custom_pricing = cleaned
+    retain = data.get("usage_retain_days")
+    if isinstance(retain, int) and retain > 0:
+        _usage_retain_days = min(retain, 3650)
+
+
+def _clean_budget_value(value):
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _clean_warn_pct(value):
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return 80
+    if value <= 0 or value > 100:
+        return 80
+    return value
 
 
 def _save_config():
@@ -203,7 +250,7 @@ def _save_config():
         os.chmod(CONFIG_FILE.parent, 0o700)
     except OSError:
         pass
-    data = {"keys": dict(_api_keys), "provider": _provider, "model": _model, "display_name": _display_name, "plan_enabled": _plan_enabled, "think_enabled": _think_enabled, "goal": _goal}
+    data = {"keys": dict(_api_keys), "provider": _provider, "model": _model, "display_name": _display_name, "plan_enabled": _plan_enabled, "think_enabled": _think_enabled, "goal": _goal, "budget": dict(_budget), "custom_pricing": {p: dict(m) for p, m in _custom_pricing.items()}, "usage_retain_days": _usage_retain_days}
     tmp = None
     try:
         fd, tmp_path = tempfile.mkstemp(dir=str(CONFIG_FILE.parent))
@@ -326,6 +373,56 @@ def set_think_enabled(enabled):
         _save_config()
     except OSError:
         pass
+
+
+def get_budget():
+    return dict(_budget)
+
+
+def set_budget(session_usd=None, daily_usd=None, warn_at_pct=None):
+    global _budget
+    if session_usd is not None:
+        _budget["session_usd"] = _clean_budget_value(session_usd)
+    if daily_usd is not None:
+        _budget["daily_usd"] = _clean_budget_value(daily_usd)
+    if warn_at_pct is not None:
+        _budget["warn_at_pct"] = _clean_warn_pct(warn_at_pct)
+    try:
+        _save_config()
+    except OSError:
+        pass
+
+
+def clear_budget():
+    global _budget
+    _budget = {"session_usd": None, "daily_usd": None, "warn_at_pct": _budget.get("warn_at_pct", 80)}
+    try:
+        _save_config()
+    except OSError:
+        pass
+
+
+def get_custom_pricing():
+    return {p: dict(m) for p, m in _custom_pricing.items()}
+
+
+def set_custom_pricing(provider, model, rates):
+    try:
+        clean = {k: float(v) for k, v in dict(rates).items() if k in ("input", "output", "cached_input")}
+    except (TypeError, ValueError):
+        return False
+    if not clean:
+        return False
+    _custom_pricing.setdefault(str(provider), {})[str(model)] = clean
+    try:
+        _save_config()
+    except OSError:
+        pass
+    return True
+
+
+def get_usage_retain_days():
+    return _usage_retain_days
 
 
 def get_goal():

@@ -5,6 +5,7 @@ from hazzel import safety
 from hazzel import session
 from hazzel import ui
 from hazzel import config
+from hazzel import usage_store
 from hazzel import wincompat
 from rich.console import Console
 
@@ -288,8 +289,83 @@ def main(argv=None):
             else:
                 ui.show_error(out)
             continue
-        if user_input.strip().lower() in ["/usage", "/u", "usage"]:
-            ui.show_usage(agent.get_session_usage(), agent.get_last_turn_usage(), agent.context_usage(messages))
+        if low_in in ["/usage", "/u", "usage", "u"] or low_in.startswith("/usage ") or low_in.startswith("usage "):
+            raw = user_input.strip()
+            if raw.startswith("/"):
+                cmd, _, arg = raw[1:].partition(" ")
+            else:
+                cmd, _, arg = raw.partition(" ")
+            arg = (arg or "").strip().lower()
+            if not arg:
+                ui.show_usage(agent.get_session_usage(), agent.get_last_turn_usage(), agent.context_usage(messages))
+            elif arg in ("today", "week", "month"):
+                ui.show_usage_range(arg, usage_store.range_totals(arg))
+            elif arg in ("--by-model", "by-model", "models"):
+                ui.show_by_model(usage_store.by_model(usage_store.query()))
+            elif arg.startswith("export"):
+                parts = arg.split()
+                fmt = parts[1] if len(parts) > 1 else "json"
+                if fmt not in ("csv", "json"):
+                    ui.show_error("Usage: /usage export [csv|json] [file]")
+                else:
+                    from datetime import datetime
+                    name = parts[2] if len(parts) > 2 else datetime.now().strftime(f"hazzel-usage-%Y%m%d.{fmt}")
+                    try:
+                        dest = config.resolve_project_path(name)
+                    except ValueError as error:
+                        ui.show_error(str(error))
+                        continue
+                    if fmt == "csv":
+                        ok, err = usage_store.export_csv(dest)
+                    else:
+                        ok, err = usage_store.export_json(dest)
+                    if ok:
+                        ui.show_export(str(dest))
+                    else:
+                        ui.show_error(f"Export failed ({err}).")
+            elif arg in ("clear", "wipe"):
+                count = usage_store.clear()
+                console.print(f"  Cleared {count} logged requests.", style="dim")
+                console.print()
+            else:
+                ui.show_error("Usage: /usage [today|week|month|--by-model|export|clear]")
+            continue
+        if low_in in ["/budget", "budget"] or low_in.startswith("/budget ") or low_in.startswith("budget "):
+            raw = user_input.strip()
+            arg = (raw[7:].strip() if raw.startswith("/") else raw[6:].strip())
+            parts = arg.split()
+            if not parts:
+                budget = config.get_budget()
+                try:
+                    daily = usage_store.range_totals("today")["cost"]
+                except Exception:
+                    daily = 0.0
+                sess = agent.get_session_usage().get("cost") or 0.0
+                console.print()
+                console.print(f"  session budget: {budget['session_usd'] or 'off'} · spent ${sess:,.2f}", style="dim")
+                console.print(f"  daily budget: {budget['daily_usd'] or 'off'} · spent ${daily:,.2f}", style="dim")
+                console.print(f"  warn at: {budget['warn_at_pct']:.0f}% — warnings only, never blocks", style="dim")
+                console.print()
+            elif parts[0] in ("off", "clear"):
+                config.clear_budget()
+                console.print("  Budgets cleared.", style="dim")
+                console.print()
+            elif len(parts) == 2 and parts[0] in ("session", "daily", "warn"):
+                try:
+                    value = float(parts[1])
+                except ValueError:
+                    ui.show_error("Usage: /budget [session|daily] <usd> | /budget warn <pct> | /budget off")
+                    continue
+                if parts[0] == "session":
+                    config.set_budget(session_usd=value)
+                elif parts[0] == "daily":
+                    config.set_budget(daily_usd=value)
+                else:
+                    config.set_budget(warn_at_pct=value)
+                console.print("  Budget updated — warnings only, Hazzel never stops itself.", style="dim")
+                console.print()
+            else:
+                ui.show_error("Usage: /budget [session|daily] <usd> | /budget warn <pct> | /budget off")
             continue
         if low_in == "retry" or low_in.startswith("/retry"):
             if not (_last_user_input or "").strip():
@@ -452,6 +528,15 @@ def main(argv=None):
         _last_response = response
         ui.show_reasoning(agent.get_last_reasoning())
         ui.show_hazzel_message(response)
+        try:
+            sess_usage = agent.get_session_usage()
+            try:
+                daily = usage_store.range_totals("today")["cost"]
+            except Exception:
+                daily = 0.0
+            ui.show_budget_warning(usage_store.budget_warnings(sess_usage.get("cost") or 0.0, daily))
+        except Exception:
+            pass
         _persist()
 
 
