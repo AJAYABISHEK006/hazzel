@@ -4,6 +4,8 @@ All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [1.4.6] - 2026-09-17
 ### Added
 - Non-interactive print mode: `hazzel -p "prompt"` runs one turn, prints the reply, and exits (0 ok, 1 turn failure, 2 usage/no-key, 130 cancelled). Piped stdin becomes context (`git diff | hazzel -p "summarize"`); bare `-p` uses stdin as the prompt. Read-only by default (writes/runs blocked with a re-run hint); `-y/--yes` pre-approves them; `--output-format json` emits `{response, model, usage}` for scripts. Progress UI stays off stdout; saved sessions untouched.
 
