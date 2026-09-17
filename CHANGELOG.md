@@ -4,6 +4,8 @@ All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [1.4.5] - 2026-09-17
 ### Added
 - Native cost and token visibility: normalized `UsageRecord` per provider adapter (`parse_usage`), dollar pricing (`pricing.py`, dated table + `custom_pricing` override, `unknown` shown honestly instead of guessed), append-only local log (`usage_store.py` → `~/.config/hazzel/usage.jsonl`, 90-day retention), `/usage today|week|month|--by-model|export|clear`, `/budget` warn-only thresholds, per-turn `tokens · session $` status line.
 
