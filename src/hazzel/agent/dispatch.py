@@ -2,6 +2,7 @@ import re
 import time
 
 from hazzel import config
+from hazzel import jobs as _bgjobs
 from hazzel import skills as _skills
 from hazzel import mcp as _mcp
 from hazzel.tools.apply_edits import apply_edits
@@ -58,6 +59,13 @@ def _active_tools():
 def _plan_blocked(tool_name, arguments):
     if tool_name in ("write_file", "edit_file", "apply_edits", "run_command", "git_commit"):
         return True
+    if tool_name == "jobs":
+        # list/poll are read-only; kill stops a process.
+        try:
+            action = str((arguments or {}).get("action") or "list").strip().lower()
+        except Exception:
+            action = "list"
+        return action in ("kill", "stop", "cancel")
     if tool_name == "mcp":
         # Discovery is read-only; calls may run third-party code.
         try:
@@ -102,6 +110,16 @@ def _tool_detail(tool_name, arguments):
             detail += f" {server}"
             if tool:
                 detail += f"/{tool}"
+    if tool_name == "run_command" and isinstance(arguments, dict):
+        bg = arguments.get("background")
+        if bg is True or str(bg or "").strip().lower() in ("1", "true", "yes", "on"):
+            detail = f"{detail} &"
+    if tool_name == "jobs" and isinstance(arguments, dict):
+        action = str(arguments.get("action", "") or "list").strip() or "list"
+        job_id = arguments.get("job_id", "")
+        detail = action
+        if str(job_id or "").strip():
+            detail += f" {job_id}"
     return detail
 
 
@@ -117,6 +135,9 @@ def _tool_cache_key(tool_name, arguments, detail):
         if action != "list":
             return None
         return (tool_name, str(detail), "", "", "")
+    if tool_name == "jobs":
+        # Output changes as jobs run — never cache.
+        return None
     return None
 
 
@@ -229,6 +250,9 @@ _TOOL_ALIASES = {
     "skills": "skill",
     "load_skill": "skill",
     "loadskill": "skill",
+    "job": "jobs",
+    "jobs_list": "jobs",
+    "bg_jobs": "jobs",
     "mcp_list": "mcp",
     "mcplist": "mcp",
     "list_mcp": "mcp",
@@ -366,6 +390,35 @@ def _coerce_tool_args(tool_name, arguments):
                 if args.get(k) is not None:
                     args["cwd"] = args[k]
                     break
+        if "background" not in args:
+            for k in ("bg", "detach", "detached", "async_", "run_in_background"):
+                if args.get(k) is not None:
+                    args["background"] = args[k]
+                    break
+        bg = args.get("background", False)
+        if isinstance(bg, str):
+            args["background"] = bg.strip().lower() in ("1", "true", "yes", "on", "background", "bg")
+        elif bg is None:
+            args["background"] = False
+        else:
+            args["background"] = bool(bg)
+    elif tool_name == "jobs":
+        if "action" not in args:
+            for k in ("op", "cmd", "verb"):
+                if args.get(k) is not None:
+                    args["action"] = args[k]
+                    break
+        args.setdefault("action", "list")
+        if "job_id" not in args:
+            for k in ("id", "job", "jid"):
+                if args.get(k) is not None:
+                    args["job_id"] = args[k]
+                    break
+        args.setdefault("job_id", None)
+        try:
+            args["limit"] = int(args.get("limit", 40))
+        except (TypeError, ValueError):
+            args["limit"] = 40
     return args
 
 
@@ -421,7 +474,12 @@ def run_tool(tool_name, arguments):
             low = str(cmd).strip().lower()
             if low.startswith("git commit") or "reset --hard" in low or low.startswith("git clean"):
                 return "Blocked: use git_commit instead of raw git writes. Destructive git (reset --hard, clean) is disabled."
-            return run_command(cmd, timeout=arguments.get("timeout"), cwd=arguments.get("cwd"), description=arguments.get("description"))
+            return run_command(cmd, timeout=arguments.get("timeout"), cwd=arguments.get("cwd"), description=arguments.get("description"), background=arguments.get("background", False))
+        if tool_name == "jobs":
+            action = arguments.get("action", "list")
+            if not isinstance(action, str) or not action.strip():
+                action = "list"
+            return _bgjobs.jobs_tool(action, arguments.get("job_id"), arguments.get("limit", 40))
         if tool_name == "git_status":
             return git_status()
         if tool_name == "git_diff":

@@ -31,7 +31,7 @@ def _build_summary_inner(trace, response_content, user_input):
         result = t["result"]
         if name == "read_file" and success and not t.get("cached"):
             inspected.append(detail)
-        elif name in ("list_files", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill") and success and not t.get("cached"):
+        elif name in ("list_files", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill", "jobs") and success and not t.get("cached"):
             inspected.append(detail or name)
         elif name == "write_file" and success:
             created.append(detail)

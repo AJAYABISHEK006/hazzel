@@ -1,6 +1,7 @@
 import shlex
 import subprocess
 
+from .. import jobs as _bg
 from .. import safety
 from .. import ui
 from .. import wincompat
@@ -128,10 +129,11 @@ def _spill_to_tmp(output):
         return ""
 
 
-def run_command(command, timeout=None, cwd=None, description=None, preapproved=False):
+def run_command(command, timeout=None, cwd=None, description=None, preapproved=False, background=False):
     text = (command or "").strip()
     if not text:
         return "Command is required."
+    bg = background is True or str(background or "").strip().lower() in ("1", "true", "yes", "on")
     secs = DEFAULT_TIMEOUT if timeout is None else _coerce_timeout(timeout)
     try:
         workdir = _resolve_cwd(cwd)
@@ -139,12 +141,16 @@ def run_command(command, timeout=None, cwd=None, description=None, preapproved=F
         return str(error)
     if not preapproved and not is_safe_command(text):
         prompt = f"Hazzel wants to run: {text}"
+        if bg:
+            prompt += "\n(runs in the background — poll with /jobs)"
         if description:
             prompt += f"\n{description}"
         prompt += "\nAllow?"
         if not ui.confirm(prompt):
             return "Command cancelled by user"
     _checkpoint_destructive_targets(text)
+    if bg:
+        return _bg.start(text, workdir, description or "")
     proc = None
     try:
         proc = subprocess.Popen(

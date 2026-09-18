@@ -32,7 +32,7 @@
 
   <blockquote>Tiny, open, approval-first coding agent.</blockquote>
 
-  <p class="dim">hazzel v1.4.8</p>
+  <p class="dim">hazzel v1.4.9</p>
 
   <p>Hazzel is a coding agent harness and CLI that lives in your terminal. It reads code, edits files, runs commands, and reads the web — always with your approval first.</p>
 
@@ -53,7 +53,7 @@
 
   <ul>
     <li><strong>Approval-first</strong>: file changes show a diff before they apply, shell commands ask first, destructive file ops are checkpointed so <code>/undo</code> always works.</li>
-    <li><strong>Small and inspectable</strong>: no background agents, no deploys, no hidden behavior — a terminal agent you can see through.</li>
+    <li><strong>Small and inspectable</strong>: no deploys, no hidden behavior — a terminal agent you can see through.</li>
     <li><strong>Real cost visibility</strong>: provider-reported tokens priced into dollars and logged locally — <code>/usage today|week|month</code>, <code>/budget</code> warns but never blocks.</li>
     <li><strong>Goal-driven</strong>: <code>/goal</code> pins an objective and every turn steers toward it until done.</li>
     <li><strong>Plan and think modes</strong>: <code>/plan on</code> explores read-only and hands you a numbered plan; <code>/think on</code> reasons step-by-step on hard edits.</li>
@@ -63,7 +63,7 @@
   </ul>
 
     <div class="turn">
-      <p class="turn-head">Hazzel <span class="dim">1.4.8</span></p>
+      <p class="turn-head">Hazzel <span class="dim">1.4.9</span></p>
       <p class="dim">~/hazzel</p>
       <p class="turn-prompt">❯</p>
       <p class="dim">openai/gpt-oss-120b · 1.2k tokens · $0.004 session · build · @ tag file</p>
@@ -92,6 +92,7 @@
     <li><code>/export [file]</code> — save the transcript to markdown</li>
     <li><code>/copy [code]</code> — copy the last reply</li>
     <li><code>/retry</code> — re-run your last message</li>
+    <li><code>/jobs [id|kill id]</code> — background shell jobs</li>
     <li><code>/undo [n]</code> — revert file changes</li>
     <li><code>/session restore</code> — pick up where you left off</li>
     <li><code>/clear</code> — reset the conversation</li>
@@ -105,7 +106,7 @@
     <li><code>/logout</code> — wipe saved keys, <code>/exit</code> — quit</li>
   </ul>
 
-  <p>Type <code>@path</code> to attach a file, <code>!command</code> to run shell directly.</p>
+  <p>Type <code>@path</code> to attach a file, <code>!command</code> to run shell directly (<code>&amp;</code> suffix runs it in the background — <code>/jobs</code> polls and kills).</p>
 
   <p><code>hazzel -p "prompt"</code> answers once and exits — pipe stdin in, <code>-y</code> allows writes, <code>--output-format json</code> for scripts.</p>
 

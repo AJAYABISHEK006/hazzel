@@ -128,8 +128,16 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "run_command",
-            "description": "Run a shell command from the project root. Read-only cmds run without approval; all else asks. Optional timeout (1-120s), cwd (project-relative dir), description. Large output is truncated with full log to tmp.",
-            "parameters": {"type": "object", "properties": {"command": {"type": "string"}, "timeout": {"type": "number"}, "cwd": {"type": "string"}, "description": {"type": "string"}}, "required": ["command"]},
+            "description": "Run a shell command from the project root. Read-only cmds run without approval; all else asks. Optional timeout (1-120s), cwd (project-relative dir), description. Pass background=true to run detached (dev servers, test suites) and poll it with the jobs tool. Large output is truncated with full log to tmp.",
+            "parameters": {"type": "object", "properties": {"command": {"type": "string"}, "timeout": {"type": "number"}, "cwd": {"type": "string"}, "description": {"type": "string"}, "background": {"type": "boolean"}}, "required": ["command"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "jobs",
+            "description": "Manage background shell jobs started with run_command(background=true). list shows every job and state (read-only); poll returns the latest output tail for one job (read-only); kill stops one job. Poll instead of re-running a long command.",
+            "parameters": {"type": "object", "properties": {"action": {"type": "string"}, "job_id": {"type": "integer"}, "limit": {"type": "integer"}}},
         },
     },
     {
@@ -190,9 +198,9 @@ TOOLS = [
     },
 ]
 
-TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "git_status", "git_diff", "git_commit", "web_search", "fetch_url", "skill", "mcp"])
+TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "write_file", "edit_file", "apply_edits", "run_command", "jobs", "git_status", "git_diff", "git_commit", "web_search", "fetch_url", "skill", "mcp"])
 
-PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill", "mcp"])
+PLAN_TOOL_NAMES = frozenset(["list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill", "mcp", "jobs"])
 
 PLAN_TOOLS = [t for t in TOOLS if t.get("function", {}).get("name") in PLAN_TOOL_NAMES]
 
@@ -218,6 +226,6 @@ PRINT_BLOCKED_MESSAGE = (
     "no writes or runs until the user re-runs with -y/--yes."
 )
 
-PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill"})
+PARALLEL_SAFE = frozenset({"list_files", "read_file", "search_files", "git_status", "git_diff", "web_search", "fetch_url", "skill", "jobs"})
 PARALLEL_MAX_WORKERS = 8
 PARALLEL_TOOL_TIMEOUT = 60.0

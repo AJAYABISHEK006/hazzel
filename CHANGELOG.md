@@ -3,6 +3,10 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.9] - 2026-09-18
+### Added
+- Background shell jobs: `run_command(background=true)` starts a detached job (dev servers, long test suites) and returns a job id; new `jobs` agent tool (`list` read-only, `poll` one job's output tail read-only, `kill` stops one, plan-mode and `hazzel -p` safe for reads). REPL: `!command &` runs in background, `/jobs`, `/jobs <id>`, `/jobs kill <id>`. Per-job full logs in `/tmp/hazzel-job-*.log`, up to 32 jobs, remaining jobs killed on exit.
+
 ## [1.4.8] - 2026-09-17
 ### Added
 - Core git back: `git_status`, `git_diff`, `git_commit` agent tools plus `/status`, `/diff [--staged]` (changed-files browser), `/commit` (auto-drafted Conventional message with y/e/n, diff preview, approval), `/log` slash commands, and zero-LLM fast paths for `status`/`diff`/`log`. Reads are plan-mode safe and skip approval (`git status/diff/log`); raw `git commit` and destructive git (`reset --hard`, `clean`) stay blocked in favor of the tools; push/pull flow through normal command approval.

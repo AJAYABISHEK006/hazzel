@@ -55,7 +55,7 @@ You can verify all three claims yourself in about 200 lines: `src/hazzel/safety.
 Reads, searches, and lists your codebase. `@path` tags a file into context; `/init` walks the tree and drafts an `AGENTS.md` map so every future session starts oriented.
 
 **Ships real changes**
-Diff-preview-and-approve editing, `/undo` backed by real checkpoints, shell commands with timeouts, `!command` for a direct shell escape, `fetch <url>` to pull docs into context, image attach (`@screenshot.png`) for vision-capable models.
+Diff-preview-and-approve editing, `/undo` backed by real checkpoints, shell commands with timeouts, `!command` for a direct shell escape (`!cmd &` runs it in the background — `/jobs` polls, kills), `fetch <url>` to pull docs into context, image attach (`@screenshot.png`) for vision-capable models.
 
 **Speaks fluent git**
 `/status`, `/diff --staged`, `/commit` (auto-drafted Conventional Commit message, diff preview, y/e/n), `/log` — reads run instantly with zero LLM round-trip, and push/pull go through the standard approval flow.
@@ -95,13 +95,13 @@ Switch anytime with `/model`. Nothing is metered by Hazzel — you pay your prov
 | Git | `/status` · `/diff [--staged]` · `/commit` · `/log` |
 | Cost | `/usage [today\|week\|month\|--by-model]` · `/budget` |
 | Extend | `/mcp [server [tool]]` · `/skills [name]` · `/init` |
-| Transcript | `/export` · `/copy` · `/retry` · `/undo [n]` · `/session restore` · `/clear` |
+| Transcript | `/export` · `/copy` · `/retry` · `/jobs` · `/undo [n]` · `/session restore` · `/clear` |
 
 Type `/` to filter live, `@` to attach a file. `/docs` prints the full guide without leaving the terminal.
 
 ## What it's honest about not being
 
-v1.4.8, early-stage. No background agents, no autonomous PRs, no cloud dashboard, no session across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose. If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
+v1.4.9, early-stage. No autonomous PRs, no cloud dashboard, no session across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose. If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
 
 ## Contributing
 

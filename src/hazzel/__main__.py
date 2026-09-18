@@ -129,9 +129,17 @@ def main(argv=None):
             if not cmd:
                 ui.show_error("Empty command — try `!ls`.")
                 continue
+            from hazzel.jobs import split_background_marker as _split_bg
+            cmd, _bg = _split_bg(cmd)
+            if not cmd:
+                ui.show_error("Empty command — try `!ls`.")
+                continue
             _last_user_input = user_input
             try:
-                result = agent.run_tool("run_command", {"command": cmd})
+                if _bg:
+                    result = agent.run_tool("run_command", {"command": cmd, "background": True})
+                else:
+                    result = agent.run_tool("run_command", {"command": cmd})
             except KeyboardInterrupt:
                 ui.show_hazzel_message("Cancelled.")
                 continue
@@ -489,6 +497,21 @@ def main(argv=None):
                     _last_response = agent.run_tool("mcp", {"action": "list", "server": server})
                 else:
                     _last_response = agent.run_tool("mcp", {"action": "call", "server": server, "tool": tool, "arguments": {}})
+            ui.show_hazzel_message(_last_response)
+            continue
+        if low_in == "jobs" or low_in == "/jobs" or low_in.startswith("/jobs ") or low_in.startswith("jobs "):
+            raw = user_input.strip()
+            arg = (raw[5:].strip() if raw.startswith("/") else raw[4:].strip()).strip("\"'")
+            if not arg or arg.lower() in ("list", "ls"):
+                _last_response = agent.run_tool("jobs", {"action": "list"})
+            else:
+                parts = arg.split()
+                if parts[0].lower() in ("kill", "stop", "cancel") and len(parts) > 1:
+                    _last_response = agent.run_tool("jobs", {"action": "kill", "job_id": parts[1]})
+                elif parts[0].lower() in ("poll", "log", "tail", "show") and len(parts) > 1:
+                    _last_response = agent.run_tool("jobs", {"action": "poll", "job_id": parts[1]})
+                else:
+                    _last_response = agent.run_tool("jobs", {"action": "poll", "job_id": parts[0]})
             ui.show_hazzel_message(_last_response)
             continue
         if low_in == "copy" or low_in.startswith("/copy"):

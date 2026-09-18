@@ -26,8 +26,10 @@ SECTIONS: list[tuple[str, list[str]]] = [
             "/model — switch provider/model   /help — quick overview   /docs — this guide",
             "/status /diff /commit /log — git core (push/pull via ! with approval)",
             "Run shell commands with ! or ask Hazzel to run them (approval first).",
+            "Suffix ! with & (`!pytest -q &`) to run in the background; /jobs lists, polls, and kills jobs.",
             "/plan on|off — read-only exploration   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
             "/undo [n] — revert file changes   /retry — re-run last message",
+            "/jobs [id|kill id] — background jobs (poll long runs without blocking)",
             "/usage — token spend + cost   /usage today|week|month|--by-model|export|clear   /budget — spend warnings (never blocks)",
             "/export [file] — save transcript   /copy [code] — copy reply",
             "/init [file] — project map   /clear — reset chat   /logout — wipe keys   /exit — quit",
@@ -64,6 +66,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
         "Shell workflow",
         [
             "Typical flow: edit → run tests with !pytest -q → fix what fails.",
+            "Long suite or server? `!pytest -q &` runs it detached — /jobs 1 polls, /jobs kill 1 stops it.",
         ],
     ),
     (
