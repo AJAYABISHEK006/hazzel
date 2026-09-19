@@ -104,7 +104,7 @@ def render_inline(value: str) -> Text:
             stripped = mention_text.rstrip(".,!?;:)]")
             tail = mention_text[len(stripped):]
             result.append("@" + stripped, style=MENTION_STYLE)
-            if tail:
+            if tail: 
                 result.append(tail)
         elif bold_text is not None:
             result.append(bold_text, style=BOLD_STYLE)
