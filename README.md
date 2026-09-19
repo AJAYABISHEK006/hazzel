@@ -13,6 +13,12 @@
   <a href="https://github.com/mukundzha/hazzel/stargazers"><img src="https://img.shields.io/github/stars/mukundzha/hazzel?style=social" alt="Stars"></a>
 </p>
 
+<p align="center">
+  <a href="https://paypal.me/mukundji">
+    <img src="https://img.shields.io/badge/Sponsor-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white" alt="Sponsor Hazzel on PayPal">
+  </a>
+</p>
+
 <p align="center"><i>If this saves you a hunt through someone's agent framework later, the ⭐ at the top of the page takes one click.</i></p>
 
 ![Hazzel demo](assets/demo.gif)
@@ -43,9 +49,9 @@ hazzel
 
 Most agents ask you to trust a black box. Hazzel asks you to trust three specific, inspectable mechanisms instead:
 
-- **Every write is a diff you approve, first.** File edits render as a unified diff before anything lands. Shell commands ask before they run — except a small allowlisted set of true read-onlys (`ls`, `cat`, `git status`), which skip the queue so exploration doesn't feel like a permission dialog.
-- **Every write is checkpointed, automatically.** Before Hazzel touches a file, it snapshots the prior bytes to `~/.config/hazzel/undo/` (up to 200 events, 20 per file). `/undo` is not "hope the model didn't break anything" — it's restoring bytes that were saved before the edit happened.
-- **Commands are sandboxed to your project root.** Destructive git — `reset --hard`, `clean` — is blocked outright; raw `git commit` is steered into the `/commit` tool with its own diff preview and approval step. Push/pull run through the normal command-approval flow.
+* **Every write is a diff you approve, first.** File edits render as a unified diff before anything lands. Shell commands ask before they run — except a small allowlisted set of true read-onlys (`ls`, `cat`, `git status`), which skip the queue so exploration doesn't feel like a permission dialog.
+* **Every write is checkpointed, automatically.** Before Hazzel touches a file, it snapshots the prior bytes to `~/.config/hazzel/undo/` (up to 200 events, 20 per file). `/undo` is not "hope the model didn't break anything" — it's restoring bytes that were saved before the edit happened.
+* **Commands are sandboxed to your project root.** Destructive git — `reset --hard`, `clean` — is blocked outright; raw `git commit` is steered into the `/commit` tool with its own diff preview and approval step. Push/pull run through the normal command-approval flow.
 
 You can verify all three claims yourself in about 200 lines: `src/hazzel/safety.py` and `src/hazzel/tools/run_command.py`.
 
@@ -74,27 +80,27 @@ Per-project sessions persist across restarts (`/session restore`). Plan mode (`/
 
 ## Providers — bring your own key, no subscription
 
-| Provider | Notes |
-|---|---|
-| Groq | Default (`openai/gpt-oss-120b`) |
-| OpenAI | |
-| Anthropic | |
-| Mistral | |
-| Gemini | |
-| DeepSeek | |
-| OpenRouter | 100+ models through one key |
-| Ollama | Fully local, no key needed |
+| Provider   | Notes                           |
+| ---------- | ------------------------------- |
+| Groq       | Default (`openai/gpt-oss-120b`) |
+| OpenAI     |                                 |
+| Anthropic  |                                 |
+| Mistral    |                                 |
+| Gemini     |                                 |
+| DeepSeek   |                                 |
+| OpenRouter | 100+ models through one key     |
+| Ollama     | Fully local, no key needed      |
 
 Switch anytime with `/model`. Nothing is metered by Hazzel — you pay your provider directly, or nothing at all if you're running local.
 
 ## Commands at a glance
 
-| Group | Commands |
-|---|---|
-| Modes | `/model` · `/plan on\|off` · `/think on\|off` · `/goal [@objective]` |
-| Git | `/status` · `/diff [--staged]` · `/commit` · `/log` |
-| Cost | `/usage [today\|week\|month\|--by-model]` · `/budget` |
-| Extend | `/mcp [server [tool]]` · `/skills [name]` · `/init` |
+| Group      | Commands                                                                               |
+| ---------- | -------------------------------------------------------------------------------------- |
+| Modes      | `/model` · `/plan on\|off` · `/think on\|off` · `/goal [@objective]`                   |
+| Git        | `/status` · `/diff [--staged]` · `/commit` · `/log`                                    |
+| Cost       | `/usage [today\|week\|month\|--by-model]` · `/budget`                                  |
+| Extend     | `/mcp [server [tool]]` · `/skills [name]` · `/init`                                    |
 | Transcript | `/export` · `/copy` · `/retry` · `/jobs` · `/undo [n]` · `/session restore` · `/clear` |
 
 Type `/` to filter live, `@` to attach a file. `/docs` prints the full guide without leaving the terminal.
