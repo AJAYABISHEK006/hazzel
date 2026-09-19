@@ -204,14 +204,14 @@ def run(messages, user_input):
             seen_reads.add(("list_files", str(path), "", "", ""))
             trace.append({"tool": "read_file", "args": {"path": path}, "detail": path, "result": "(attached via @mention)", "success": True, "exit_code": None})
             try:
-                ui.show_tool("read_file", path, success=True)
+                ui.show_tool("read_file", path, success=True, result="(attached via @mention)")
             except Exception:
                 pass
         for name in attached_skills:
             seen_reads.add(("skill", str(name), "", "", ""))
             trace.append({"tool": "skill", "args": {"name": name}, "detail": name, "result": "(attached via @mention)", "success": True, "exit_code": None})
             try:
-                ui.show_tool("skill", name, success=True)
+                ui.show_tool("skill", name, success=True, result="(attached via @mention)")
             except Exception:
                 pass
         if attached:
@@ -348,7 +348,7 @@ def run(messages, user_input):
                             fres, fok, fexit = _finalize_result(raw)
                             job["_final"] = (fres, fok, fexit)
                             try:
-                                ui.show_tool(job["tool"], job["detail"], success=fok, exit_code=fexit, elapsed=elapsed)
+                                ui.show_tool(job["tool"], job["detail"], success=fok, exit_code=fexit, elapsed=elapsed, result=fres)
                             except Exception:
                                 pass
                     except KeyboardInterrupt:
@@ -366,7 +366,7 @@ def run(messages, user_input):
                 else:
                     result, success, exit_code = _finalize_result(job["result"])
                     try:
-                        ui.show_tool(job["tool"], job["detail"], success=success, exit_code=exit_code, elapsed=job.get("elapsed"))
+                        ui.show_tool(job["tool"], job["detail"], success=success, exit_code=exit_code, elapsed=job.get("elapsed"), result=result)
                     except Exception:
                         pass
                 job["elapsed"] = job.get("elapsed") if not job["cached"] else None
@@ -383,7 +383,7 @@ def run(messages, user_input):
                         raise
                     result, success, exit_code = _finalize_result(raw)
                 try:
-                    ui.show_tool(job["tool"], job["detail"], success=success, exit_code=exit_code, cached=job["cached"], elapsed=elapsed)
+                    ui.show_tool(job["tool"], job["detail"], success=success, exit_code=exit_code, cached=job["cached"], elapsed=elapsed, result=result)
                 except Exception:
                     pass
                 task_messages.append({"role": "tool", "content": result, "tool_call_id": job["tc"].id})

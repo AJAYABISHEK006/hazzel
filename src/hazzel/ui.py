@@ -5,23 +5,17 @@ import time
 
 from rich.console import Console
 from rich.containers import Renderables
-from rich.live import Live
-from rich.spinner import Spinner
-from rich.table import Table
 from rich.text import Text
-
-from .formatter import print_response
 
 console = Console()
 
 _loader = None
 
-HAZZEL_COLOR = "white"
+HAZZEL_COLOR = "#ec8500"
 USER_COLOR = "#8ab4f8"
 
-TOOL_COLOR = "dim"
 SUCCESS_COLOR = "#8fb08f"
-ERROR_COLOR = "#c9a3a3"
+ERROR_COLOR = "#c97676"
 
 DIM_COLOR = "dim"
 
@@ -804,6 +798,8 @@ def get_input(messages=None, prefill=""):
 
 
 def _live_body(text):
+    from rich.spinner import Spinner  # deferred: only needed when loader shows
+
     parts = []
     if text:
         label = Text(text, style="dim")
@@ -829,6 +825,8 @@ def show_loader(text="Working…"):
     if _loader is not None:
         _loader.update(_live_body(text))
         return
+    from rich.live import Live  # deferred: only needed when loader shows
+
     try:
         _loader = Live(
             _live_body(text),
@@ -909,6 +907,8 @@ def push_reasoning_token(token):
 
 
 def _live_reasoning(text):
+    from rich.spinner import Spinner  # deferred: only needed when reasoning is live
+
     spinner = Spinner("dots", text=Text("thinking", style="dim italic"))
     if not text:
         return Renderables([spinner])
@@ -1032,6 +1032,10 @@ def show_hazzel_message(message):
     hide_loader()
     if not message or not message.strip():
         return
+    # Deferred import: formatter pulls rich.syntax + pygments (~30ms),
+    # only needed once the first assistant message is actually rendered.
+    from .formatter import print_response
+
     print_response(console, message)
 
 
@@ -1141,11 +1145,42 @@ def _format_elapsed(seconds):
     return f"{seconds:.1f}s"
 
 
-def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, elapsed=None):
+_PREVIEW_MAX_LINES = 8
+_PREVIEW_MAX_CHARS = 480
+
+
+def _format_result_preview(result, max_lines=_PREVIEW_MAX_LINES, max_chars=_PREVIEW_MAX_CHARS):
+    if not result:
+        return "(no output)"
+    text = str(result)
+    lines = text.splitlines()
+    # Drop trailing blanks so the suffix count is meaningful.
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if not lines:
+        return "(no output)"
+
+    if len(lines) <= max_lines:
+        head = "\n".join(lines)
+        if len(head) <= max_chars:
+            return head
+
+    # Truncate by line count, then fold overly long lines so the preview
+    # never blows out the terminal width horizontally.
+    head_lines = []
+    for line in lines[:max_lines]:
+        line = line[: max_chars // 2]
+        head_lines.append(line)
+    out = "\n".join(head_lines)
+    remaining = len(lines) - len(head_lines)
+    return out + f"\n…{remaining} more lines"
+
+
+def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False,
+              elapsed=None, result=None):
     if _quiet:
         return
-    icon = "·" if success else "!"
-    color = DIM_COLOR if success else ERROR_COLOR
+    icon = "●" if success else "!"
     limit = 45 if exit_code is not None else 62
     text = Text()
     text.append("  ", style=DIM_COLOR)
@@ -1153,11 +1188,11 @@ def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, 
         text.append(f"{icon} ", style=DIM_COLOR)
         text.append(str(tool_name).ljust(12), style=DIM_COLOR)
     else:
-        text.append(f"{icon} ", style=color)
-        text.append(str(tool_name).ljust(12), style="white" if success else color)
+        text.append(f"{icon} ", style=HAZZEL_COLOR if success else ERROR_COLOR)
+        text.append(str(tool_name).ljust(12), style="white" if success else ERROR_COLOR)
     short = _short_detail(_relativize_detail(detail), limit=limit)
     if short:
-        text.append(f" {short}", style=DIM_COLOR)
+        text.append(f" {short}", style="#9aa4b2")
     meta = _format_elapsed(elapsed)
     if cached:
         meta = (meta + " · " if meta else "") + "cached"
@@ -1165,6 +1200,13 @@ def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, 
         text.append(f"  · {meta}", style=DIM_COLOR)
     if exit_code is not None and not success:
         text.append(f"  · exit {exit_code}", style=DIM_COLOR)
+
+    preview_rows = None
+    if result is not None and not _quiet:
+        preview = _format_result_preview(result)
+        if preview:
+            preview_rows = _split_preview_rows(preview)
+
     if _loader is not None:
         _tool_rows.append(text)
         while len(_tool_rows) > _MAX_TOOL_ROWS:
@@ -1172,6 +1214,30 @@ def show_tool(tool_name, detail="", success=True, exit_code=None, cached=False, 
         _loader.update(_live_body(None))
     else:
         console.print(text)
+
+    if preview_rows is not None:
+        for row in preview_rows:
+            if _loader is not None:
+                _tool_rows.append(row)
+            else:
+                console.print(row)
+        if _loader is not None:
+            while len(_tool_rows) > _MAX_TOOL_ROWS:
+                _tool_rows.pop(0)
+            _loader.update(_live_body(None))
+
+
+def _split_preview_rows(preview):
+    rows = []
+    for i, line in enumerate(preview.splitlines()):
+        t = Text()
+        if i == 0:
+            t.append("  " + chr(0x23BF) + " ", style="#7d8799")
+        else:
+            t.append("  " + chr(0x2502) + " ", style="#5b6472")
+        t.append(line, style="#c5cdd9")
+        rows.append(t)
+    return rows
 
 
 def show_user_command(command):
@@ -1279,6 +1345,8 @@ def show_git_status(branch, body):
     if not body or body.strip() in ("(clean)", "Clean."):
         console.print(Text("  Clean — nothing to commit.", style=SUCCESS_COLOR))
     else:
+        from rich.table import Table  # deferred: only needed when git status has entries
+
         table = Table(show_header=False, box=None, pad_edge=False, padding=(0, 1, 0, 0))
         table.add_column(overflow="fold", width=4)
         table.add_column(overflow="fold")
@@ -1640,6 +1708,8 @@ _STAR_LINE = "If Hazzel helps, star us: github.com/mukundzha/hazzel"
 
 
 def _help_table(rows):
+    from rich.table import Table  # deferred: only needed when help is shown
+
     ncols = max((len(row) for row in rows), default=2)
     table = Table(
         show_header=False,
@@ -1822,6 +1892,8 @@ def _usage_body(session, last=None, context=None):
             pass
     yield Text("")
 
+    from rich.table import Table  # deferred: only needed when usage body renders
+
     table = Table.grid(padding=(0, 2))
     table.add_column(justify="right", style="dim", width=10)
     table.add_column(justify="right", style="white", width=10)
@@ -1974,6 +2046,8 @@ def show_by_model(groups):
         console.print(Text("  Nothing logged yet.", style="dim"))
         console.print()
         return
+    from rich.table import Table  # deferred: only needed when model usage table renders
+
     table = Table.grid(padding=(0, 2))
     table.add_column(justify="left", style="white")
     table.add_column(justify="right", style="dim", width=10)
@@ -2012,6 +2086,8 @@ def show_summary(summary, trace=None):
                 line.append(f"  {detail}", style="dim")
             console.print(line)
         console.print()
+    from .formatter import print_response  # deferred: pygments chain (~30ms)
+
     print_response(console, summary)
     console.print()
 

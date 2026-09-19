@@ -1,9 +1,7 @@
-import concurrent.futures
 import html
 import ipaddress
 import re
 import urllib.parse
-import urllib.request
 
 from .. import tool_cache
 
@@ -127,7 +125,9 @@ def _fetch_uncached(url, max_chars, query):
         max_chars = DEFAULT_MAX_CHARS
     max_chars = max(500, min(max_chars, 20000))
 
-    request = urllib.request.Request(
+    import urllib.request as urllib_request  # deferred: ~45ms import chain not needed at startup
+
+    request = urllib_request.Request(
         url,
         headers={
             "User-Agent": "Hazzel/1.1.0",
@@ -135,7 +135,7 @@ def _fetch_uncached(url, max_chars, query):
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        with urllib_request.urlopen(request, timeout=TIMEOUT) as response:
             content_type = ""
             try:
                 content_type = str(response.headers.get("Content-Type", "") or "")
@@ -202,6 +202,8 @@ def fetch_url(url="", max_chars=DEFAULT_MAX_CHARS, query="", urls=None):
     budget = max(500, min(budget, 20000))
     picked = targets[:MAX_URLS]
     share = max(500, budget // len(picked))
+    import concurrent.futures  # deferred: ~15ms incl. inspect, only for multi-URL fetch
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(picked), thread_name_prefix="hazzel-fetch") as pool:
         bodies = list(pool.map(lambda t: _fetch_one(t, share, query), picked))
     sections = []

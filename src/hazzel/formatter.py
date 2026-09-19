@@ -19,18 +19,22 @@ from rich import box
 
 DEFAULT_CODE_THEME = "github-dark"
 
-ACCENT_STYLE = "bold white"
-HEADING_STYLE = "bold white"
+ACCENT = "#ec8500"
+
+ACCENT_STYLE = f"bold {ACCENT}"
+HEADING_STYLE = f"bold {ACCENT}"
 BOLD_STYLE = "bold white"
 ITALIC_STYLE = "italic"
 STRIKE_STYLE = "strike"
-INLINE_CODE_STYLE = "bold cyan"
-LINK_STYLE = "underline cyan"
+INLINE_CODE_STYLE = "bold #e8c191"
+LINK_STYLE = "underline #ec8500"
 LINK_URL_STYLE = "dim"
-MENTION_STYLE = "bold #8ab4f8"
+MENTION_STYLE = ACCENT_STYLE
 
 BULLET_STYLE = "dim"
-BULLET_MARKER_STYLE = "dim"
+BULLET_MARKER_STYLE = ACCENT_STYLE
+CHECK_DONE_STYLE = "bold #8fb08f"
+CHECK_TODO_STYLE = "dim"
 BLOCKQUOTE_STYLE = "dim italic"
 
 TABLE_PADDING = (0, 1)
@@ -283,17 +287,27 @@ def render_code_block(
         line.rstrip() for line in code.splitlines()
     ).strip("\n")
 
+    line_count = max(len(clean.splitlines()), 1)
+
+    # Editor feel: show line numbers and indent guides
+    # only once a block is long enough to need them.
+    dense = line_count >= 8
+
+    syntax = Syntax(
+        clean,
+        language or "text",
+        theme=DEFAULT_CODE_THEME,
+        line_numbers=dense,
+        word_wrap=True,
+        indent_guides=dense,
+    )
+
     return Panel(
-        Syntax(
-            clean,
-            language,
-            theme=DEFAULT_CODE_THEME,
-            line_numbers=False,
-            word_wrap=True,
-            indent_guides=False,
-        ),
-        title=language,
+        syntax,
+        title=Text(language, style=ACCENT_STYLE) if language else None,
         title_align="left",
+        subtitle=f"{line_count} lines" if line_count >= 5 else None,
+        subtitle_align="right",
         border_style="dim",
         box=box.ROUNDED,
         expand=False,
@@ -324,7 +338,7 @@ def render_table(
 
     table = Table(
         show_header=True,
-        header_style="bold white",
+        header_style=f"bold {ACCENT}",
         border_style="dim",
         box=box.ROUNDED,
         show_lines=False,
@@ -332,6 +346,7 @@ def render_table(
         expand=False,
         padding=TABLE_PADDING,
         pad_edge=False,
+        row_styles=["", "dim"],
     )
 
     column_count = len(headers)
@@ -410,13 +425,17 @@ def render_list_item(
 
         symbol = "✓" if checked else "□"
 
+        symbol_style = (
+            CHECK_DONE_STYLE if checked else CHECK_TODO_STYLE
+        )
+
         result = Text(
             indentation
         )
 
         result.append(
             f"{symbol} ",
-            style=BULLET_MARKER_STYLE,
+            style=symbol_style,
         )
 
         append_item_content(result, content)
@@ -558,10 +577,17 @@ def parse_blocks(message: str) -> list[ParsedBlock]:
 
         if is_heading(line):
 
+            heading_match = re.match(
+                r"^\s*(#{1,6})\s+(.*)$",
+                line,
+            )
+
+            level = len(heading_match.group(1))
+
             blocks.append(
                 ParsedBlock(
                     "heading",
-                    strip_heading(line),
+                    (level, heading_match.group(2).strip()),
                 )
             )
 
@@ -817,19 +843,52 @@ def render_block(
     # Heading
     if kind == "heading":
 
+        if isinstance(block.content, tuple):
+            level, heading_text = block.content
+        else:
+            level, heading_text = 2, str(block.content)
+
         heading = Text()
-        heading.append("▸ ", style=ACCENT_STYLE)
-        start = len(heading)
-        heading.append_text(
-            render_inline(
-                str(block.content)
+
+        if level <= 1:
+            # Section title: accent bar + bold text + dim underline.
+            heading.append("▌ ", style=ACCENT_STYLE)
+            start = len(heading)
+            heading.append_text(
+                render_inline(heading_text)
             )
-        )
-        heading.stylize(
-            HEADING_STYLE,
-            start,
-            len(heading),
-        )
+            heading.stylize(
+                HEADING_STYLE,
+                start,
+                len(heading),
+            )
+            heading.append("\n")
+            heading.append(
+                "─" * min(max(len(heading_text), 4), 48),
+                style="dim",
+            )
+        elif level == 2:
+            heading.append("▸ ", style=ACCENT_STYLE)
+            start = len(heading)
+            heading.append_text(
+                render_inline(heading_text)
+            )
+            heading.stylize(
+                HEADING_STYLE,
+                start,
+                len(heading),
+            )
+        else:
+            heading.append("▸ ", style=ACCENT_STYLE)
+            start = len(heading)
+            heading.append_text(
+                render_inline(heading_text)
+            )
+            heading.stylize(
+                "bold",
+                start,
+                len(heading),
+            )
 
         return heading
 

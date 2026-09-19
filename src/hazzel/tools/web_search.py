@@ -1,7 +1,6 @@
 import html
 import re
 import urllib.parse
-import urllib.request
 
 from .. import tool_cache
 
@@ -47,7 +46,8 @@ def web_search(query, count=5):
         if hit is not None:
             return hit
     body = urllib.parse.urlencode({"q": query.strip()}).encode("utf-8")
-    request = urllib.request.Request(
+    import urllib.request as urllib_request  # deferred: ~27ms chain not needed at startup
+    request = urllib_request.Request(
         SEARCH_URL,
         data=body,
         headers={
@@ -57,7 +57,7 @@ def web_search(query, count=5):
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        with urllib_request.urlopen(request, timeout=TIMEOUT) as response:
             page = response.read(500_000).decode("utf-8", errors="replace")
     except Exception as error:
         return f"Tool error: web search failed ({error}). Try again or fetch a known URL directly."

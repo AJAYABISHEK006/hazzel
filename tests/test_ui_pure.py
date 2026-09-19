@@ -96,3 +96,52 @@ def test_slash_fuzzy_transpositions():
     assert ui._filter_slash_commands("/stus") == []
     assert ui._filter_slash_commands("status") == []
     assert ui._filter_slash_commands("/zzzzzz") == []
+
+
+def test_format_result_preview_short():
+    out = ui._format_result_preview("hello world")
+    assert out == "hello world"
+    assert "more lines" not in out
+
+
+def test_format_result_preview_truncates_lines():
+    lines = "\n".join(f"line {i}" for i in range(20))
+    out = ui._format_result_preview(lines)
+    assert "more lines" in out
+    preview_lines = out.splitlines()
+    assert len(preview_lines) == 9  # 8 preview + 1 suffix line
+
+
+def test_format_result_preview_empty():
+    assert ui._format_result_preview("") == "(no output)"
+    assert ui._format_result_preview(None) == "(no output)"
+    assert ui._format_result_preview("\n\n\n") == "(no output)"
+
+
+def test_format_result_preview_no_truncation_marker_when_short():
+    out = ui._format_result_preview("one\ntwo\nthree")
+    assert "more lines" not in out
+    assert out == "one\ntwo\nthree"
+
+
+def test_show_tool_result_signature_accepts_new_param():
+    """show_tool must accept a result kwarg (backward compatible)."""
+    import io
+    from rich.console import Console
+
+    buf = io.StringIO()
+    old_console = ui.console
+    ui.console = Console(file=buf, width=100, force_terminal=False)
+    ui._quiet = False
+    ui._loader = None
+    try:
+        ui.show_tool("read_file", "pyproject.toml", success=True, result="hello\nworld")
+    finally:
+        ui._quiet = False
+        ui._loader = None
+        ui.console = old_console
+
+    out = buf.getvalue()
+    assert "read_file" in out
+    assert "hello" in out
+    assert "world" in out
