@@ -13,11 +13,11 @@
   <a href="https://github.com/mukundzha/hazzel/stargazers"><img src="https://img.shields.io/github/stars/mukundzha/hazzel?style=social" alt="Stars"></a>
 </p>
 
-<p align="center">
+<!-- <p align="center">
   <a href="https://paypal.me/mukundji">
     <img src="https://img.shields.io/badge/Sponsor-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white" alt="Sponsor Hazzel on PayPal">
   </a>
-</p>
+</p> -->
 
 <p align="center"><i>If this saves you a hunt through someone's agent framework later, the ⭐ at the top of the page takes one click.</i></p>
 
