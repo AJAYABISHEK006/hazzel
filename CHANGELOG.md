@@ -3,6 +3,13 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+### Changed
+- Reply colors (`formatter.py`): one fixed role per color — brand orange (`#ec8500`) is reserved for structure (heading markers, bullets, panel titles, quote bars), a lighter tint (`#ffb454`) highlights bold "main words" in prose, and a single cool blue (`#8ab4f8`) marks everything that points somewhere (links, `@file` mentions). Italic and strikethrough stay uncolored; nothing is colored at random.
+
+### Fixed
+- Reply rendering (`formatter.py`): bold/italic no longer match inside words — `__init__`, `my_var_name`, and `1*2*3` render verbatim instead of being mangled into styled text (emphasis still requires word boundaries and non-blank content). Tables hug their content (narrow cells no longer padded to a 20-char floor) with padded edge borders so text no longer touches the box; blockquotes get an accent bar (`▌`) with dimmed content; anonymous fenced code blocks no longer show a meaningless `text` title.
+
 ## [1.4.9] - 2026-09-18
 ### Added
 - Background shell jobs: `run_command(background=true)` starts a detached job (dev servers, long test suites) and returns a job id; new `jobs` agent tool (`list` read-only, `poll` one job's output tail read-only, `kill` stops one, plan-mode and `hazzel -p` safe for reads). REPL: `!command &` runs in background, `/jobs`, `/jobs <id>`, `/jobs kill <id>`. Per-job full logs in `/tmp/hazzel-job-*.log`, up to 32 jobs, remaining jobs killed on exit.

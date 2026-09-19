@@ -19,23 +19,39 @@ from rich import box
 
 DEFAULT_CODE_THEME = "github-dark"
 
+# ---------------------------------------------------------------------------
+# Color palette — one fixed role per color, no random application.
+#
+#   Orange family (the Hazzel brand hue):
+#     ACCENT   — structure only: heading markers, bullets, panel titles
+#     STRESS   — words the model bolds on purpose ("main words")
+#   Cool contrast (a single blue for anything that *points* somewhere):
+#     COOL     — links and @file mentions
+#   Neutrals stay neutral: italic/strike get no color (they de-emphasize),
+#   table headers are chrome (bold white), code/check colors are kept.
+# ---------------------------------------------------------------------------
+
 ACCENT = "#ec8500"
+STRESS = "#ffb454"  # lighter tint of ACCENT — same family, readable at weight
+COOL = "#8ab4f8"
 
 ACCENT_STYLE = f"bold {ACCENT}"
 HEADING_STYLE = f"bold {ACCENT}"
-BOLD_STYLE = "bold white"
+STRESS_STYLE = f"bold {STRESS}"
+BOLD_STYLE = STRESS_STYLE  # bold in prose == highlighted main words
 ITALIC_STYLE = "italic"
 STRIKE_STYLE = "strike"
 INLINE_CODE_STYLE = "bold #e8c191"
-LINK_STYLE = "underline #ec8500"
+LINK_STYLE = f"underline {COOL}"
 LINK_URL_STYLE = "dim"
-MENTION_STYLE = ACCENT_STYLE
+MENTION_STYLE = f"bold {COOL}"
 
 BULLET_STYLE = "dim"
 BULLET_MARKER_STYLE = ACCENT_STYLE
 CHECK_DONE_STYLE = "bold #8fb08f"
 CHECK_TODO_STYLE = "dim"
 BLOCKQUOTE_STYLE = "dim italic"
+BLOCKQUOTE_BAR_STYLE = f"dim {ACCENT}"
 
 TABLE_PADDING = (0, 1)
 
@@ -66,7 +82,7 @@ INLINE_PATTERN = re.compile(
     r"""
     (?P<code>`(?P<code_text>[^`\n]+)`)
     |
-    (?P<bold>\*\*(?P<bold_text>.+?)\*\*|__(?P<bold_text2>.+?)__)
+    (?P<bold>(?<![\w*])\*\*(?=\S)(?P<bold_text>.+?)(?<=\S)\*\*(?![\w*])|(?<![\w_])__(?=\S)(?!\w+__)(?P<bold_text2>.+?)(?<=\S)__(?![\w_]))
     |
     (?P<strike>~~(?P<strike_text>.+?)~~)
     |
@@ -74,7 +90,7 @@ INLINE_PATTERN = re.compile(
     |
     (?P<mention>(?<![\w@])@(?P<mention_text>[A-Za-z0-9_~][A-Za-z0-9_~./+-]*))
     |
-    (?P<italic>(?<!\*)\*(?P<italic_text>[^*\n]+)\*(?!\*)|(?<!_)_(?P<italic_text2>[^_\n]+)_(?!_))
+    (?P<italic>(?<![\w*])\*(?=\S)(?P<italic_text>[^*\n]+?)(?<=\S)\*(?![\w*])|(?<![\w_])_(?=\S)(?P<italic_text2>[^_\n]+?)(?<=\S)_(?![\w_]))
     """,
     re.VERBOSE,
 )
@@ -304,7 +320,7 @@ def render_code_block(
 
     return Panel(
         syntax,
-        title=Text(language, style=ACCENT_STYLE) if language else None,
+        title=Text(language, style=ACCENT_STYLE) if language not in ("", "text") else None,
         title_align="left",
         subtitle=f"{line_count} lines" if line_count >= 5 else None,
         subtitle_align="right",
@@ -345,7 +361,7 @@ def render_table(
         show_edge=True,
         expand=False,
         padding=TABLE_PADDING,
-        pad_edge=False,
+        pad_edge=True,
         row_styles=["", "dim"],
     )
 
@@ -365,7 +381,7 @@ def render_table(
                 str(header),
                 overflow="fold",
                 no_wrap=False,
-                min_width=20,
+                max_width=40,
             )
 
     for row in rows:
@@ -401,7 +417,7 @@ def append_item_content(result: Text, content: str) -> None:
         return
     head, separator, rest = lead
     headed = render_inline(head)
-    headed.stylize(BOLD_STYLE)
+    headed.stylize(STRESS_STYLE)
     result.append_text(headed)
     result.append(f" {separator} ", style=BULLET_STYLE)
     result.append_text(render_inline(rest))
@@ -939,13 +955,13 @@ def render_block(
                 content.append("\n")
 
             content.append(
-                "│ ",
-                style=BLOCKQUOTE_STYLE,
+                "▌ ",
+                style=BLOCKQUOTE_BAR_STYLE,
             )
 
-            content.append_text(
-                render_inline(line)
-            )
+            quoted = render_inline(line)
+            quoted.stylize(BLOCKQUOTE_STYLE)
+            content.append_text(quoted)
 
         return content
 
