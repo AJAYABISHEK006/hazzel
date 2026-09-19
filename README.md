@@ -199,7 +199,7 @@ Hazzel is free and open-source.
 If you find it useful, you can support its development and help keep it maintained, improved, and dependency-light.
 
 <p align="center">
-  <a href="https://paypal.me/mukundji">
+  <a href="https://paypal.me/mukundzi">
     <img src="https://img.shields.io/badge/Sponsor%20Hazzel-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white" alt="Sponsor Hazzel on PayPal">
   </a>
 </p>
