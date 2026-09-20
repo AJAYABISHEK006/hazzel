@@ -225,10 +225,11 @@ If you find it useful, you can support its development and help keep it maintain
   <i>Every contribution helps fund continued development and maintenance.</i>
 </p>
 
-## Who's behind this
+<p align="center">Who's behind this</p>
 
-<table>
-  <tr>
+<p align="center">
+  <table align="center">
+    <tr>
     <td align="center">
       <a href="https://github.com/mukundzha">
         <img src="https://avatars.githubusercontent.com/mukundzha?v=4&s=80" width="80" alt="mukundzha"/><br/>
@@ -248,7 +249,8 @@ If you find it useful, you can support its development and help keep it maintain
       </a>
     </td>
   </tr>
-</table>
+  </table>
+</p>
 
 Contributions land reviewed and CI-verified, and every external contributor is credited in the release notes.
 
