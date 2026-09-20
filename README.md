@@ -10,6 +10,9 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mukundzha/hazzel/actions/workflows/ci.yml">
+    <img src="https://github.com/mukundzha/hazzel/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
   <a href="https://pypi.org/project/hazzel/">
     <img src="https://img.shields.io/pypi/v/hazzel" alt="PyPI">
   </a>
