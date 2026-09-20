@@ -135,16 +135,14 @@ If you need a heavier, more automated agent, better options exist. If you want t
 
 ## Support Hazzel
 
-Hazzel is free and open-source. If it finds its way into your daily terminal, you can help keep it maintained and dependency-light:
+Hazzel is free and open-source, and it plans to stay both. The cheapest support costs nothing: use it, report what breaks, or send a PR.
+
+If you'd rather throw money at the problem, that works too — it goes straight into maintainer time for docs, fixes, and reviews:
 
 <p align="center">
   <a href="https://paypal.me/mukundzi">
-    <img src="https://img.shields.io/badge/Sponsor%20Hazzel-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white" alt="Sponsor Hazzel on PayPal">
+    <img src="https://img.shields.io/badge/Donate-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal">
   </a>
-</p>
-
-<p align="center">
-  <i>Every contribution helps fund continued development and maintenance.</i>
 </p>
 
 <p align="center">Who's behind this</p>
@@ -174,7 +172,7 @@ Hazzel is free and open-source. If it finds its way into your daily terminal, yo
   </table>
 </p>
 
-Contributions land reviewed and CI-verified, and every external contributor is credited in the release notes.
+Every PR lands through the same door: reviewed, CI-verified on four Python versions, credited in the release notes. ronaldsterners and Gambit-Checkmate started with a good first issue — the next row is one PR away.
 
 ## Contributing
 
