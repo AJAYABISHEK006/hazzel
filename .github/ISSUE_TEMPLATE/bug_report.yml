@@ -1,0 +1,25 @@
+name: Bug report
+description: Something broke or behaved wrong
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you ran, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Hazzel version
+      description: Output of `hazzel --version`
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Python version
+      description: e.g. Ubuntu 24.04, Python 3.12
+    validations:
+      required: true

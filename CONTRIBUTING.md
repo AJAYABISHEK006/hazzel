@@ -30,6 +30,10 @@ Requires Python 3.10+.
 
 Small, focused PRs get merged fastest.
 
+First-time contributors: your first CI run waits for a maintainer's approval before it
+starts — that's a standard GitHub guard for forks, not a rejection. After your first
+merged PR it runs automatically.
+
 ## Reporting bugs
 
 Open an [issue](https://github.com/mukundzha/hazzel/issues) with:
