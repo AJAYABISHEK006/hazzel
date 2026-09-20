@@ -33,6 +33,8 @@
 
 ![Hazzel demo](assets/demo.gif)
 
+**Recently shipped:** `/review` (1.5.0) · git `/commit` with auto-drafted messages (1.4.8) · background `!cmd &` jobs (1.4.9) · stdlib-only MCP client (1.4.7) · usage in real dollars (1.4.5) — [full changelog](CHANGELOG.md)
+
 ## The 30-second pitch
 
 Every coding agent claims to be transparent. Most of them are 50k-line frameworks with a plugin system, a cloud dashboard, and a subscription.
@@ -43,6 +45,7 @@ It does the things a coding agent is supposed to do — read your repo, edit fil
 
 ```bash
 pip install hazzel
+export GROQ_API_KEY="..."   # or skip this and pick a provider inside with /model
 cd your-project
 hazzel
 ```
@@ -54,6 +57,17 @@ hazzel
   ● edit_file   src/hazzel/agent/core.py
   ● run_command pytest -q — passed
 ```
+
+**Things you can say on day one**
+
+```text
+❯ /review --staged
+❯ /commit
+❯ what does agent/fastpath.py do — is it just caching?
+❯ @screenshot.png make the nav match this
+```
+
+No project quiz, no config ceremony — the read-only commands answer instantly, and anything that touches disk stops at a diff first.
 
 `/model`, pick a provider, paste a key — that's the whole setup.
 
@@ -210,6 +224,33 @@ If you find it useful, you can support its development and help keep it maintain
 <p align="center">
   <i>Every contribution helps fund continued development and maintenance.</i>
 </p>
+
+## Who's behind this
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/mukundzha">
+        <img src="https://avatars.githubusercontent.com/mukundzha?v=4&s=80" width="80" alt="mukundzha"/><br/>
+        <sub><b>Mukund Jha</b><br/>creator</sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/ronaldsterners">
+        <img src="https://avatars.githubusercontent.com/ronaldsterners?v=4&s=80" width="80" alt="ronaldsterners"/><br/>
+        <sub><b>ronaldsterners</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Gambit-Checkmate">
+        <img src="https://avatars.githubusercontent.com/Gambit-Checkmate?v=4&s=80" width="80" alt="Gambit-Checkmate"/><br/>
+        <sub><b>Gambit-Checkmate</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
+Contributions land reviewed and CI-verified, and every external contributor is credited in the release notes.
 
 ## Contributing
 
