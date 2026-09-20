@@ -27,21 +27,13 @@
   </a>
 </p>
 
-<p align="center">
-  <i>If this saves you a hunt through someone's agent framework later, the ⭐ at the top of the page takes one click.</i>
-</p>
-
 ![Hazzel demo](assets/demo.gif)
 
-**Recently shipped:** `/review` (1.5.0) · git `/commit` with auto-drafted messages (1.4.8) · background `!cmd &` jobs (1.4.9) · stdlib-only MCP client (1.4.7) · usage in real dollars (1.4.5) — [full changelog](CHANGELOG.md)
+**Recently shipped:** confirmation prompts accept `yes` — first external contribution (@Gambit-Checkmate, 1.5.1) · `/review` (1.5.0) · background `!cmd &` jobs (1.4.9) · git `/commit` with auto-drafted messages (1.4.8) · stdlib-only MCP client (1.4.7) — [full changelog](CHANGELOG.md)
 
-## The 30-second pitch
+## Try it in your project
 
-Every coding agent claims to be transparent. Most of them are 50k-line frameworks with a plugin system, a cloud dashboard, and a subscription.
-
-Hazzel is ~10k lines of Python in a flat `src/hazzel/` layout you can trace end to end — `agent/core.py` is the whole loop, `tools/` is every action it can take, and `safety.py` is the entire undo system.
-
-It does the things a coding agent is supposed to do — read your repo, edit files, run commands, work with git — and stops before every one of them to show you exactly what's about to happen.
+Every agent claims transparency. Hazzel is ~10k lines of Python you can trace end to end — `agent/core.py` is the whole loop, `tools/` is every action it can take, `safety.py` is the entire undo system — and it stops before every write to show you what's about to happen.
 
 ```bash
 pip install hazzel
@@ -69,113 +61,33 @@ hazzel
 
 No project quiz, no config ceremony — the read-only commands answer instantly, and anything that touches disk stops at a diff first.
 
-`/model`, pick a provider, paste a key — that's the whole setup.
-
-Or export:
-
-```text
-OPENAI_API_KEY
-ANTHROPIC_API_KEY
-GROQ_API_KEY
-MISTRAL_API_KEY
-GEMINI_API_KEY
-DEEPSEEK_API_KEY
-OPENROUTER_API_KEY
-```
-
-and skip the prompt entirely.
-
-Running local models through Ollama needs no key at all.
-
 ## Why it's built this way
 
 Most agents ask you to trust a black box. Hazzel asks you to trust three specific, inspectable mechanisms instead:
 
-* **Every write is a diff you approve, first.** File edits render as a unified diff before anything lands. Shell commands ask before they run — except a small allowlisted set of true read-onlys (`ls`, `cat`, `git status`), which skip the queue so exploration doesn't feel like a permission dialog.
+* **Every write is a diff you approve, first.** Shell commands too — except a small allowlist of true read-onlys (`ls`, `cat`, `git status`) that skip the queue.
+* **Every write is checkpointed, automatically.** Prior bytes snapshotted to `~/.config/hazzel/undo/` (200 events, 20 per file) before anything lands. `/undo` restores them.
+* **Commands are sandboxed to your project root.** `git reset --hard` and `clean` are blocked outright; raw `git commit` is steered into `/commit` with its own diff preview.
 
-* **Every write is checkpointed, automatically.** Before Hazzel touches a file, it snapshots the prior bytes to `~/.config/hazzel/undo/` — up to 200 events, 20 per file. `/undo` restores bytes that were saved before the edit happened.
-
-* **Commands are sandboxed to your project root.** Destructive git commands such as `reset --hard` and `clean` are blocked outright. Raw `git commit` is steered into the `/commit` tool with its own diff preview and approval step. Push and pull run through the normal command-approval flow.
-
-You can verify all three claims yourself in about 200 lines:
-
-```text
-src/hazzel/safety.py
-src/hazzel/tools/run_command.py
-```
+You can verify all three claims in about 200 lines: `src/hazzel/safety.py`, `src/hazzel/tools/run_command.py`.
 
 ## What it actually does
 
-**Understands your repo**
-
-Reads, searches, and lists your codebase. `@path` tags a file into context; `/init` walks the tree and drafts an `AGENTS.md` map so every future session starts oriented.
-
-**Ships real changes**
-
-Diff-preview-and-approve editing, `/undo` backed by real checkpoints, shell commands with timeouts, `!command` for a direct shell escape (`!cmd &` runs it in the background — `/jobs` polls and kills), `fetch <url>` to pull docs into context, and image attachment (`@screenshot.png`) for vision-capable models.
-
-**Speaks fluent git**
-
-`/status`, `/diff --staged`, `/review [--staged]` (read-only review of what you're about to commit), `/commit` with an auto-drafted Conventional Commit message and diff preview, `/log` — reads run instantly with zero LLM round-trip.
-
-Push and pull go through the standard approval flow.
-
-**Extends through open standards, not lock-in**
-
-A minimal MCP stdio client using only the standard library talks to any MCP server through `.hazzel/mcp.json`.
-
-`SKILL.md` files load project- or user-level skills on demand.
-
-Neither requires Hazzel-specific tooling to author.
-
-**Shows you the bill**
-
-Provider-reported tokens are parsed into real dollar figures and logged locally — not estimated.
-
-```text
-/usage today
-/usage week
-/usage month
-/usage --by-model
-/budget
-```
-
-A live `tokens · $` line is shown every turn.
-
-**Stays out of your way between sessions**
-
-Per-project sessions persist across restarts with `/session restore`.
-
-Plan mode (`/plan on`) explores read-only and proposes a numbered plan before touching anything.
-
-Think mode (`/think on`) turns on extended reasoning for hard edits when you're willing to pay the token cost.
-
-**Works in a pipeline, not just a REPL**
-
-```bash
-hazzel -p "prompt"
-```
-
-Runs one turn and exits.
-
-Pipe a diff in, get a summary out. Use `--output-format json` for scripts and real exit codes (`0`, `1`, `2`, `130`) for CI.
+| What | In practice |
+| ---- | ----------- |
+| Understands your repo | Reads, searches, lists. `@path` pins a file into context; `/init` drafts an `AGENTS.md` map so every session starts oriented. |
+| Ships real changes | Diff-preview editing, `/undo` checkpoints, shell with timeouts, `!cmd &` background jobs via `/jobs`, `fetch <url>` for docs, `@image.png` for vision-capable models. |
+| Speaks fluent git | `/status` · `/diff --staged` · `/review` · `/commit` (auto-drafted Conventional message) · `/log` — reads run instantly, zero LLM round-trip. |
+| Extends without lock-in | Minimal MCP stdio client — standard library only, any server via `.hazzel/mcp.json`. `SKILL.md` skills load on demand. Neither needs Hazzel-specific tooling to author. |
+| Shows you the bill | Provider-reported tokens parsed into real dollars, logged locally — not estimated. Live `tokens · $` line every turn; `/usage today\|week\|month --by-model`, `/budget`. |
+| Remembers between sessions | Per-project sessions persist with `/session restore`. `/plan on` explores read-only first; `/think on` buys extended reasoning for hard edits. |
+| Works in a pipeline | `hazzel -p "prompt"` runs one turn and exits — pipe a diff in, get a summary out. `--output-format json` + real exit codes for CI. |
 
 ## Providers — bring your own key, no subscription
 
-| Provider   | Notes                           |
-| ---------- | ------------------------------- |
-| Groq       | Default (`openai/gpt-oss-120b`) |
-| OpenAI     |                                 |
-| Anthropic  |                                 |
-| Mistral    |                                 |
-| Gemini     |                                 |
-| DeepSeek   |                                 |
-| OpenRouter | 100+ models through one key     |
-| Ollama     | Fully local, no key needed      |
+Eight providers: OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter (100+ models, one key), Groq (default: `openai/gpt-oss-120b`) — set one env var (`OPENAI_API_KEY`, `GROQ_API_KEY`, …) and skip the prompt entirely.
 
-Switch anytime with `/model`.
-
-Nothing is metered by Hazzel — you pay your provider directly, or nothing at all if you're running local.
+Ollama runs fully local and needs no key at all. Switch anytime with `/model`. Nothing is metered by Hazzel — you pay your provider directly, or nothing at all if you're running local.
 
 ## Commands at a glance
 
@@ -187,33 +99,17 @@ Nothing is metered by Hazzel — you pay your provider directly, or nothing at a
 | Extend     | `/mcp [server [tool]]` · `/skills [name]` · `/init`                                    |
 | Transcript | `/export` · `/copy` · `/retry` · `/jobs` · `/undo [n]` · `/session restore` · `/clear` |
 
-Type `/` to filter live.
-
-Use `@` to attach a file.
-
-```text
-/docs
-```
-
-prints the full guide without leaving the terminal.
+Type `/` to filter live, `@` to attach a file, `/docs` for the full guide without leaving the terminal.
 
 ## What it's honest about not being
 
-v1.5.0, early-stage.
+v1.5.1, early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
 
-No autonomous PRs, no cloud dashboard, and no session synchronization across machines.
-
-It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
-
-If you need a heavier, more automated agent, better options exist.
-
-If you want to see exactly what's about to happen to your files before it happens, this is built for that.
+If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
 
 ## Support Hazzel
 
-Hazzel is free and open-source.
-
-If you find it useful, you can support its development and help keep it maintained, improved, and dependency-light.
+Hazzel is free and open-source. If it finds its way into your daily terminal, you can help keep it maintained and dependency-light:
 
 <p align="center">
   <a href="https://paypal.me/mukundzi">
@@ -256,19 +152,11 @@ Contributions land reviewed and CI-verified, and every external contributor is c
 
 ## Contributing
 
-Issues and pull requests are genuinely welcome.
-
-`ROADMAP.md` tracks feature gaps against other terminal agents, and `AGENTS.md` — regenerate it with `/init` — contains the project rules:
-
-* No new dependencies without asking.
-* No public API changes without a CHANGELOG entry.
-* Keep the implementation small and inspectable.
+Issues and PRs genuinely welcome — `ROADMAP.md` tracks what's next, `CONTRIBUTING.md` has the ground rules (small, inspectable, no new deps without asking), and good first issues are labeled as such.
 
 ## License
 
-AGPL-3.0-or-later.
-
-See [LICENSE](LICENSE).
+AGPL-3.0-or-later. See [LICENSE](LICENSE).
 
 ---
 
