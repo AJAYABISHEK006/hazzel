@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-09-20
+### Added
+- README: architecture diagram (mermaid) and an honest comparison table (Hazzel vs Aider vs cloud agents).
+- Community: issue templates (bug, feature request, security routing), PR template, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `FUNDING.yml`, GitHub Discussions.
+
+### Changed
+- README rewritten: 280 → ~200 lines, repetition cut, features compressed into a scannable table, "Recently shipped" now leads with the first external contribution.
+
 ## [1.5.1] - 2026-09-20
 ### Fixed
 - Confirmation prompts accept both `y` and `yes`, regardless of letter case (@Gambit-Checkmate in #7).

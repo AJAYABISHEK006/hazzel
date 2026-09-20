@@ -71,6 +71,32 @@ Most agents ask you to trust a black box. Hazzel asks you to trust three specifi
 
 You can verify all three claims in about 200 lines: `src/hazzel/safety.py`, `src/hazzel/tools/run_command.py`.
 
+```mermaid
+flowchart LR
+    you["you — prompt, @file, slash command"] --> repl["__main__.py"]
+    repl --> loop["agent/core.py — the whole loop"]
+    loop --> fast["agent/fastpath.py — zero-LLM answers for reads"]
+    loop --> dispatch["agent/dispatch.py"]
+    dispatch --> gate["safety.py — approve · sandbox · checkpoint"]
+    gate --> tools["tools/ — 13 actions"]
+    loop --> llm["providers/ — 8 backends, your key"]
+    loop --> term["ui.py + formatter.py — your terminal"]
+```
+
+## How it compares
+
+Where Hazzel stands out, measured against the tools people actually compare it to:
+
+| Capability | Hazzel | Aider | Cloud agents |
+| ---------- | ------ | ----- | ------------ |
+| Price model | free · BYOK | free · BYOK | subscription |
+| Local models | Ollama, keyless, zero config | supported, needs env setup | no |
+| Readable end to end | ~10k lines | tens of thousands | closed source |
+| `/undo` without git | byte-level snapshots | git-commit based | varies |
+| MCP client | stdio, zero new deps | — | varies |
+
+Aider is excellent — this is about fit, not superiority.
+
 ## What it actually does
 
 | What | In practice |
@@ -103,7 +129,7 @@ Type `/` to filter live, `@` to attach a file, `/docs` for the full guide withou
 
 ## What it's honest about not being
 
-v1.5.1, early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
+v1.5.2, early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
 
 If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
 
