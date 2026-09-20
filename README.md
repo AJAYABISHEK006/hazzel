@@ -16,8 +16,8 @@
   <a href="https://pypi.org/project/hazzel/">
     <img src="https://img.shields.io/pypi/v/hazzel" alt="PyPI">
   </a>
-  <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/python-%3E%3D3.10-blue" alt="Python">
+  <a href="https://pypi.org/project/hazzel/">
+    <img src="https://img.shields.io/pypi/dm/hazzel" alt="Downloads">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-green" alt="License">
