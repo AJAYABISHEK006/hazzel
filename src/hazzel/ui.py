@@ -2117,7 +2117,8 @@ def show_summary(summary, trace=None):
 
 
 def show_star_nudge():
-    console.print(Text("  If Hazzel helps, star us: github.com/mukundzha/hazzel", style="dim"))
+    console.print(Text("  If Hazzel's earning its keep in your terminal, a star helps others find it:", style="dim"))
+    console.print(Text("  github.com/mukundzha/hazzel  (this shows once — silence it any time with HAZZEL_NO_NAG=1)", style="dim"))
     console.print()
 
 

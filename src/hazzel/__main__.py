@@ -88,9 +88,6 @@ def main(argv=None):
         raise SystemExit(_print_mode.run_print(final, approve=args.approve, output_format=args.output_format))
     wincompat.enable_ansi()
     ui.show_welcome(config.get_current_display_name(), config.PROJECT_ROOT)
-    if config.should_show_star_nudge():
-        ui.show_star_nudge()
-        config.mark_star_nudged()
     if not config.has_any_key():
         console.print("  No API key yet — run /model to add one (takes ~10s).", style="dim")
         console.print()
@@ -649,6 +646,10 @@ def main(argv=None):
         _last_response = response
         ui.show_reasoning(agent.get_last_reasoning())
         ui.show_hazzel_message(response)
+        config.bump_star_nudge_count()
+        if config.should_show_star_nudge():
+            ui.show_star_nudge()
+            config.mark_star_nudged()
         try:
             sess_usage = agent.get_session_usage()
             try:
