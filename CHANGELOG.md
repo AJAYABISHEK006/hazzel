@@ -5,8 +5,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-09-20
 ### Fixed
-- Confirmation prompts now accept both `y` and `yes`, regardless of letter case.
+- Confirmation prompts accept both `y` and `yes`, regardless of letter case (@Gambit-Checkmate in #7).
 
 ## [1.5.0] - 2026-09-20
 ### Added
