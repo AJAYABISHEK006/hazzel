@@ -8,37 +8,6 @@ PROJECT_ROOT = Path.cwd()
 CONFIG_DIR = Path(os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "hazzel"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 LEGACY_FILE = Path.home() / ".hazzel" / "config.json"
-STAR_NUDGE_FILE = CONFIG_DIR / ".star_nudged"
-STAR_NUDGE_THRESHOLD = 5
-
-
-def _star_nudge_count():
-    try:
-        return int(STAR_NUDGE_FILE.read_text(encoding="utf-8").strip() or 0)
-    except (OSError, ValueError):
-        return 0
-
-
-def should_show_star_nudge():
-    if os.getenv("HAZZEL_NO_NAG", "").strip().lower() not in ("", "0"):
-        return False
-    return _star_nudge_count() >= STAR_NUDGE_THRESHOLD
-
-
-def bump_star_nudge_count():
-    try:
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        STAR_NUDGE_FILE.write_text(str(_star_nudge_count() + 1), encoding="utf-8")
-    except OSError:
-        pass
-
-
-def mark_star_nudged():
-    try:
-        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        STAR_NUDGE_FILE.write_text("-1", encoding="utf-8")
-    except OSError:
-        pass
 
 
 DEFAULT_CONTEXT_WINDOW = 131072

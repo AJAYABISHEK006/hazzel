@@ -3,7 +3,12 @@
 All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.5.3] - 2026-09-20
+### Removed
+- Star nudge and its 0600-perm marker file (`~/.config/hazzel/.star_nudged`); first launch no longer prints the star line.
+
+### Changed
+- Landing page (`site/`): full SEO pass — keyword title/meta, canonical, OG/Twitter cards, `SoftwareApplication` + `FAQPage` JSON-LD, live demo GIF, Hazzel-vs-alternatives comparison, crawlable FAQ, `robots.txt`/`sitemap.xml`; dropped the locomotive-scroll dependency (~40KB) for faster loads.
 
 ## [1.5.2] - 2026-09-20
 ### Added

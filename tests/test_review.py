@@ -267,7 +267,6 @@ def test_review_slash_command_is_wired(monkeypatch, repo):
 
     (repo / "a.txt").write_text("one\ntwo\n")
     _use_provider(monkeypatch, FakeProvider("**Summary** — from the slash command"))
-    monkeypatch.setattr(config, "should_show_star_nudge", lambda: False)
     monkeypatch.setattr(main_mod.session, "save", lambda *a, **k: None)
     monkeypatch.setattr(main_mod.ui, "show_loader", lambda *a, **k: None)
     monkeypatch.setattr(main_mod.ui, "hide_loader", lambda *a, **k: None)
@@ -293,7 +292,6 @@ def test_review_staged_with_nothing_staged_skips_model(monkeypatch, repo):
 
     (repo / "a.txt").write_text("one\ntwo\n")  # unstaged only, nothing added
     provider = _use_provider(monkeypatch, FakeProvider("should not run"))
-    monkeypatch.setattr(config, "should_show_star_nudge", lambda: False)
     monkeypatch.setattr(main_mod.session, "save", lambda *a, **k: None)
     rendered = []
     monkeypatch.setattr(main_mod.ui, "show_review", lambda *a, **k: rendered.append(a))

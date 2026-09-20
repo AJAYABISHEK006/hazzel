@@ -129,7 +129,7 @@ Type `/` to filter live, `@` to attach a file, `/docs` for the full guide withou
 
 ## What it's honest about not being
 
-v1.5.2, early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
+v1.5.3, early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
 
 If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
 

@@ -646,10 +646,6 @@ def main(argv=None):
         _last_response = response
         ui.show_reasoning(agent.get_last_reasoning())
         ui.show_hazzel_message(response)
-        config.bump_star_nudge_count()
-        if config.should_show_star_nudge():
-            ui.show_star_nudge()
-            config.mark_star_nudged()
         try:
             sess_usage = agent.get_session_usage()
             try:

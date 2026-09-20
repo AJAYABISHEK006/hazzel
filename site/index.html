@@ -3,122 +3,171 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hazzel — a small terminal coding agent</title>
-<meta name="description" content="Hazzel lives in your terminal. It reads code, edits files, runs commands, and reads the web — always with your approval first. Bring your own key.">
-<meta property="og:title" content="Hazzel — a small terminal coding agent">
-<meta property="og:description" content="Reads code, edits files, runs commands, reads the web — always with your approval first.">
-<meta property="og:image" content="logo.png">
-<link rel="icon" href="logo.png">
+<title>Hazzel — Open Source Terminal Coding Agent</title>
+<meta name="description" content="Hazzel is a free, open source AI coding agent for your terminal. Reads code, edits files, runs commands — approval-first, with your own API key.">
+<link rel="canonical" href="https://mukundzha.github.io/hazzel/">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Mukund Jha">
+<meta name="theme-color" content="#faf9f7">
+<meta name="keywords" content="terminal coding agent, AI coding assistant, CLI coding agent, open source AI agent, bring your own key, aider alternative, claude code alternative, python coding agent, groq coding assistant">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazzel">
+<meta property="og:url" content="https://mukundzha.github.io/hazzel/">
+<meta property="og:title" content="Hazzel — Open Source Terminal Coding Agent">
+<meta property="og:description" content="A tiny coding agent in your terminal. Reads code, edits files, runs commands — every change approved by you first. Free, open source, bring your own key.">
+<meta property="og:image" content="https://mukundzha.github.io/hazzel/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Hazzel — open source terminal coding agent. pip install hazzel.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Hazzel — Open Source Terminal Coding Agent">
+<meta name="twitter:description" content="Tiny, approval-first AI coding agent for your terminal. Free, open source, bring your own key.">
+<meta name="twitter:image" content="https://mukundzha.github.io/hazzel/og.png">
+<link rel="icon" type="image/png" sizes="32x32" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css">
 <link rel="stylesheet" href="styles.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Hazzel","alternateName":"Hazzel terminal coding agent","applicationCategory":"DeveloperApplication","operatingSystem":["macOS","Linux","Windows"],"softwareVersion":"1.5.3","license":"https://www.gnu.org/licenses/agpl-3.0.html","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Mukund Jha","url":"https://github.com/mukundzha"},"codeRepository":"https://github.com/mukundzha/hazzel","downloadUrl":"https://pypi.org/project/hazzel/","programmingLanguage":"Python","requirements":"Python 3.10 or newer","description":"Open source AI coding agent for the terminal. Reads code, edits files, runs commands, reviews diffs — approval-first, with your own API key (Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter, Ollama)."}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Hazzel free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Hazzel is free and open source (AGPL-3.0). You pay your model provider directly for API usage — or nothing at all with local Ollama models. No subscription."}},{"@type":"Question","name":"Which AI models does Hazzel support?","acceptedAnswer":{"@type":"Answer","text":"Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter and local Ollama — one API key each, switched with /model."}},{"@type":"Question","name":"Does Hazzel change files without asking?","acceptedAnswer":{"@type":"Answer","text":"No. Every file edit shows a diff before it applies, shell commands ask first, and every write is checkpointed so /undo always restores prior bytes."}},{"@type":"Question","name":"What do I need to install Hazzel?","acceptedAnswer":{"@type":"Answer","text":"Python 3.10+ on macOS, Linux or Windows. pip install hazzel, run hazzel, add a key with /model."}},{"@type":"Question","name":"How is Hazzel different from Aider or Claude Code?","acceptedAnswer":{"@type":"Answer","text":"Hazzel is ~10k lines of Python you can trace end to end, bring-your-own-key with no subscription, and approval-first on every mutation with automatic undo checkpoints."}}]}
+</script>
 </head>
 <body>
-<div data-scroll-container>
+<a class="skip" href="#main">Skip to content</a>
 <header class="nav">
-  <a class="brand" href="#"><img src="logo.png" alt="Hazzel"></a>
-  <nav>
+  <a class="brand" href="https://mukundzha.github.io/hazzel/"><img src="logo.png" alt="Hazzel logo — open source terminal coding agent" width="34" height="34"></a>
+  <nav aria-label="Primary">
     <a href="#install">install</a>
     <a href="#why">why</a>
+    <a href="#compare">compare</a>
     <a href="#commands">commands</a>
+    <a href="#faq">faq</a>
     <a href="https://github.com/mukundzha/hazzel">source</a>
   </nav>
 </header>
-
-<main>
-  <h1>Hazzel</h1>
-
-  <blockquote>Tiny, open, approval-first coding agent.</blockquote>
-
-  <p class="dim">hazzel v1.5.0</p>
-
-  <p>Hazzel is a coding agent harness and CLI that lives in your terminal. It reads code, edits files, runs commands, and reads the web — always with your approval first.</p>
-
-  <p>Its output is closer to a Unix shell than an IDE in the terminal: every step is visible, every mutation goes through you.</p>
-
-  <p>It is open source (AGPL-3.0), model-agnostic, and runs on macOS, Linux, and Windows.</p>
-
-  <h2 id="install">Install</h2>
-
-  <div class="install">
-    <code><span class="prompt">$ </span><span id="install-cmd">pip install hazzel</span></code>
-    <button id="copy-btn" type="button">copy</button>
-  </div>
-
-  <p>Supports macOS, Linux, and Windows on Python ≥ 3.10. Run <code>/model</code>, pick a provider, paste your key.</p>
-
-  <h2 id="why">Why Hazzel</h2>
-
-  <ul>
-    <li><strong>Approval-first</strong>: file changes show a diff before they apply, shell commands ask first, destructive file ops are checkpointed so <code>/undo</code> always works.</li>
-    <li><strong>Small and inspectable</strong>: no deploys, no hidden behavior — a terminal agent you can see through.</li>
-    <li><strong>Real cost visibility</strong>: provider-reported tokens priced into dollars and logged locally — <code>/usage today|week|month</code>, <code>/budget</code> warns but never blocks.</li>
-    <li><strong>Goal-driven</strong>: <code>/goal</code> pins an objective and every turn steers toward it until done.</li>
-    <li><strong>Plan and think modes</strong>: <code>/plan on</code> explores read-only and hands you a numbered plan; <code>/think on</code> reasons step-by-step on hard edits.</li>
-    <li><strong>Skills and AGENTS.md</strong>: drop in a <code>SKILL.md</code> or project map and Hazzel follows it every turn.</li>
-    <li><strong>Sessions that survive restarts</strong>: per-project history saves automatically, <code>/session restore</code> picks up where you left off.</li>
-    <li><strong>Model and provider agnostic</strong>: Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter, and local Ollama through one key each.</li>
-  </ul>
-
-    <div class="turn">
-      <p class="turn-head">Hazzel <span class="dim">1.5.0</span></p>
+<main id="main">
+  <section aria-labelledby="hero">
+    <h1 id="hero">Hazzel: the open source terminal coding agent</h1>
+    <blockquote>A tiny AI coding assistant that lives in your terminal — approval-first, bring your own key.</blockquote>
+    <p class="dim">hazzel v1.5.3 · free · AGPL-3.0 · macOS, Linux, Windows</p>
+    <p>Hazzel is a <strong>terminal coding agent</strong> and CLI harness: it reads code, edits files, runs commands, reviews diffs and reads the web — <strong>always with your approval first</strong>. Every step is visible, every mutation goes through you.</p>
+    <p>It is <strong>open source</strong> (~10k lines of Python you can trace end to end), <strong>model-agnostic</strong> (Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter, local Ollama), and <strong>free</strong> — no subscription. You pay your provider directly, or nothing at all on local models.</p>
+    <figure class="demo">
+      <img src="demo.gif" alt="Hazzel demo: terminal coding agent fixing a failing test — read file, edit, run pytest" width="720" height="405" loading="eager" fetchpriority="high">
+      <figcaption class="dim">Watch Hazzel fix a failing test: read, edit (diff approved), run, passed.</figcaption>
+    </figure>
+  </section>
+  <section aria-labelledby="install">
+    <h2 id="install">Install the terminal coding agent</h2>
+    <div class="install">
+      <code><span class="prompt">$ </span><span id="install-cmd">pip install hazzel</span></code>
+      <button id="copy-btn" type="button">copy</button>
+    </div>
+    <p>Requires Python 3.10 or newer. Then:</p>
+    <pre><code>export GROQ_API_KEY="..."   # or skip this and pick a provider inside with /model
+cd your-project
+hazzel</code></pre>
+    <p>The whole loop is <code>agent/core.py</code>, every action is in <code>tools/</code>, the undo system is <code>safety.py</code> — and Hazzel stops before every write to show you what is about to happen.</p>
+    <div class="turn" aria-label="Example session">
+      <p class="turn-head">Hazzel <span class="dim">1.5.3</span></p>
       <p class="dim">~/hazzel</p>
-      <p class="turn-prompt">❯</p>
+      <p class="turn-prompt">❯ Fix the failing test in tests/test_agent.py</p>
+      <p class="dim">read_file · edit_file (diff approved) · run_command pytest -q — passed</p>
       <p class="dim">openai/gpt-oss-120b · 1.2k tokens · $0.004 session · build · @ tag file</p>
     </div>
-
-  <h2 id="commands">Commands</h2>
-
-  <p class="group">Modes</p>
-  <ul>
-    <li><code>/model</code> — switch provider and model</li>
-    <li><code>/plan on|off</code> — read-only exploration with a numbered plan</li>
-    <li><code>/think on|off</code> — deeper reasoning when a task is hard</li>
-    <li><code>/goal [@objective]</code> — pin an objective, <code>/goal run</code> executes it</li>
-  </ul>
-
-  <p class="group">Cost</p>
-  <ul>
-    <li><code>/usage</code> — tokens and dollars this session</li>
-    <li><code>/usage today|week|month</code> — spend over time, <code>--by-model</code> per model</li>
-    <li><code>/budget</code> — warn-only spend limits, never blocks</li>
-  </ul>
-
-  <p class="group">Transcript</p>
-  <ul>
-    <li><code>/summary</code> — what the last turn did</li>
-    <li><code>/export [file]</code> — save the transcript to markdown</li>
-    <li><code>/copy [code]</code> — copy the last reply</li>
-    <li><code>/retry</code> — re-run your last message</li>
-    <li><code>/jobs [id|kill id]</code> — background shell jobs</li>
-    <li><code>/undo [n]</code> — revert file changes</li>
-    <li><code>/session restore</code> — pick up where you left off</li>
-    <li><code>/clear</code> — reset the conversation</li>
-  </ul>
-
-  <p class="group">Project</p>
-  <ul>
-    <li><code>/init [file]</code> — generate an AGENTS.md project map</li>
-    <li><code>/skills [name]</code> — list installed skills, preview one</li>
-    <li><code>/help</code> — quick overview, <code>/docs</code> — the full usage guide</li>
-    <li><code>/logout</code> — wipe saved keys, <code>/exit</code> — quit</li>
-  </ul>
-
-  <p>Type <code>@path</code> to attach a file, <code>!command</code> to run shell directly (<code>&amp;</code> suffix runs it in the background — <code>/jobs</code> polls and kills).</p>
-
-  <p><code>hazzel -p "prompt"</code> answers once and exits — pipe stdin in, <code>-y</code> allows writes, <code>--output-format json</code> for scripts.</p>
-
-  <p><a href="https://github.com/mukundzha/hazzel/releases">changelog</a></p>
+  </section>
+  <section aria-labelledby="why">
+    <h2 id="why">Why Hazzel</h2>
+    <ul>
+      <li><strong>Approval-first</strong>: file changes show a diff before they apply, shell commands ask first, destructive ops are checkpointed so <code>/undo</code> always works.</li>
+      <li><strong>Small and inspectable</strong>: no deploys, no hidden behavior — a terminal agent you can see through. Verify the safety claims in ~200 lines: <code>src/hazzel/safety.py</code>, <code>src/hazzel/tools/run_command.py</code>.</li>
+      <li><strong>Real cost visibility</strong>: provider-reported tokens priced into dollars and logged locally — <code>/usage today|week|month</code>, <code>/budget</code> warns but never blocks.</li>
+      <li><strong>Goal-driven</strong>: <code>/goal</code> pins an objective and every turn steers toward it until done.</li>
+      <li><strong>Plan and think modes</strong>: <code>/plan on</code> explores read-only and hands you a numbered plan; <code>/think on</code> reasons step-by-step on hard edits.</li>
+      <li><strong>Skills and AGENTS.md</strong>: drop in a <code>SKILL.md</code> or project map and Hazzel follows it every turn.</li>
+      <li><strong>Sessions that survive restarts</strong>: per-project history saves automatically, <code>/session restore</code> picks up where you left off.</li>
+      <li><strong>Model and provider agnostic</strong>: Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter, and local Ollama through one key each.</li>
+    </ul>
+  </section>
+  <section aria-labelledby="compare">
+    <h2 id="compare">Hazzel vs alternatives</h2>
+    <p>Looking for an <strong>Aider alternative</strong> or a <strong>Claude Code alternative</strong> you can run in any terminal with your own key? How the options compare:</p>
+    <div class="table-wrap">
+    <table>
+      <caption class="dim">Open source terminal AI coding assistants compared</caption>
+      <thead>
+        <tr><th scope="col">Tool</th><th scope="col">Open source</th><th scope="col">Bring your own key</th><th scope="col">Approval-first diffs</th><th scope="col">Built-in undo</th><th scope="col">Local models</th></tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Hazzel</th><td>Yes (AGPL-3.0)</td><td>Yes — 8 providers</td><td>Yes, every write</td><td>Yes (<code>/undo</code>)</td><td>Yes (Ollama)</td></tr>
+        <tr><th scope="row">Aider</th><td>Yes (Apache-2.0)</td><td>Yes</td><td>Yes</td><td>Git-based</td><td>Yes</td></tr>
+        <tr><th scope="row">Cloud agents</th><td>Mostly no</td><td>Subscription</td><td>Varies</td><td>Varies</td><td>No</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>Hazzel's bet: most agents ask you to trust a black box. Hazzel asks you to trust three specific, inspectable mechanisms instead — approved diffs, automatic checkpoints, project-root sandboxing.</p>
+  </section>
+  <section aria-labelledby="commands">
+    <h2 id="commands">Commands</h2>
+    <p class="group">Modes</p>
+    <ul>
+      <li><code>/model</code> — switch provider and model</li>
+      <li><code>/plan on|off</code> — read-only exploration with a numbered plan</li>
+      <li><code>/think on|off</code> — deeper reasoning when a task is hard</li>
+      <li><code>/goal [@objective]</code> — pin an objective, <code>/goal run</code> executes it</li>
+    </ul>
+    <p class="group">Cost</p>
+    <ul>
+      <li><code>/usage</code> — tokens and dollars this session</li>
+      <li><code>/usage today|week|month</code> — spend over time, <code>--by-model</code> per model</li>
+      <li><code>/budget</code> — warn-only spend limits, never blocks</li>
+    </ul>
+    <p class="group">Git</p>
+    <ul>
+      <li><code>/review [--staged]</code> — read-only AI review: Summary, Risks, Missing, Before commit</li>
+      <li><code>/commit</code> — auto-drafted message with diff preview</li>
+      <li><code>/status</code> · <code>/diff</code> · <code>/log</code> — git without leaving the loop</li>
+    </ul>
+    <p class="group">Transcript</p>
+    <ul>
+      <li><code>/summary</code> — what the last turn did</li>
+      <li><code>/export [file]</code> — save the transcript to markdown</li>
+      <li><code>/copy [code]</code> — copy the last reply</li>
+      <li><code>/retry</code> — re-run your last message</li>
+      <li><code>/jobs [id|kill id]</code> — background shell jobs</li>
+      <li><code>/undo [n]</code> — revert file changes</li>
+      <li><code>/session restore</code> — pick up where you left off</li>
+      <li><code>/clear</code> — reset the conversation</li>
+    </ul>
+    <p class="group">Project</p>
+    <ul>
+      <li><code>/init [file]</code> — generate an AGENTS.md project map</li>
+      <li><code>/skills [name]</code> — list installed skills, preview one</li>
+      <li><code>/help</code> — quick overview, <code>/docs</code> — the full usage guide</li>
+      <li><code>/logout</code> — wipe saved keys, <code>/exit</code> — quit</li>
+    </ul>
+    <p>Type <code>@path</code> to attach a file, <code>!command</code> to run shell directly (<code>&amp;</code> suffix runs it in the background — <code>/jobs</code> polls and kills).</p>
+    <p><code>hazzel -p "prompt"</code> answers once and exits — pipe stdin in, <code>-y</code> allows writes, <code>--output-format json</code> for scripts.</p>
+    <p><a href="https://github.com/mukundzha/hazzel/releases">changelog</a> · <a href="https://pypi.org/project/hazzel/">PyPI</a> · <a href="https://github.com/mukundzha/hazzel">GitHub source</a></p>
+  </section>
+  <section aria-labelledby="faq">
+    <h2 id="faq">Frequently asked questions</h2>
+    <dl>
+      <div><dt>Is Hazzel free?</dt><dd>Yes. Hazzel is free and open source (AGPL-3.0). You pay your model provider directly for API usage — or nothing at all with local Ollama models. No subscription, nothing metered by Hazzel.</dd></div>
+      <div><dt>Which AI models does Hazzel support?</dt><dd>Groq, OpenAI, Anthropic, Mistral, Gemini, DeepSeek, OpenRouter and local Ollama — one API key each, switched any time with <code>/model</code>.</dd></div>
+      <div><dt>Does Hazzel change my files without asking?</dt><dd>No. Every file edit shows a diff before it applies, shell commands ask first, and every write is checkpointed so <code>/undo</code> always restores prior bytes. Commands are sandboxed to your project root.</dd></div>
+      <div><dt>What do I need to install Hazzel?</dt><dd>Python 3.10+ on macOS, Linux or Windows. <code>pip install hazzel</code>, run <code>hazzel</code>, add a key with <code>/model</code>.</dd></div>
+      <div><dt>How is Hazzel different from Aider or Claude Code?</dt><dd>Hazzel is ~10k lines of Python you can trace end to end, bring-your-own-key with no subscription, and approval-first on every mutation with automatic undo. See the <a href="#compare">comparison table</a>.</dd></div>
+    </dl>
+  </section>
 </main>
-
 <footer>
-  <p><a href="https://github.com/mukundzha/hazzel">source</a> · <a href="https://pypi.org/project/hazzel/">pypi</a> · AGPL-3.0 · by Mukund Jha · if it fits your workflow, star the repo</p>
+  <p><a href="https://github.com/mukundzha/hazzel">source</a> · <a href="https://pypi.org/project/hazzel/">pypi</a> · <a href="https://github.com/mukundzha/hazzel/releases">changelog</a> · AGPL-3.0 · by Mukund Jha · if it fits your workflow, star the repo</p>
 </footer>
-
-</div>
-<script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
-<script src="script.js"></script>
+<script src="script.js" defer></script>
 </body>
 </html>

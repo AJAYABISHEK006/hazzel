@@ -2116,12 +2116,6 @@ def show_summary(summary, trace=None):
     console.print()
 
 
-def show_star_nudge():
-    console.print(Text("  If Hazzel's earning its keep in your terminal, a star helps others find it:", style="dim"))
-    console.print(Text("  github.com/mukundzha/hazzel  (this shows once — silence it any time with HAZZEL_NO_NAG=1)", style="dim"))
-    console.print()
-
-
 def show_copied(msg="Copied to clipboard."):
     console.print()
     line = Text()
