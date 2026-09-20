@@ -4,6 +4,9 @@ All notable changes to Hazzel are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- `/review [--staged]`: read-only review of the uncommitted diff. The current model receives the changed files and their diffs (capped at 20 files / 12k chars, untracked files synthesized in) and answers with Summary · Risks · Missing · Before commit as rendered markdown; a deterministic offline heuristic scan (`review.py`) is used when no model is reachable. It never writes files, runs commands, or creates undo checkpoints, and it leaves the last reply set so `/copy` works afterwards.
+
 ### Changed
 - Reply colors (`formatter.py`): one fixed role per color — brand orange (`#ec8500`) is reserved for structure (heading markers, bullets, panel titles, quote bars), a lighter tint (`#ffb454`) highlights bold "main words" in prose, and a single cool blue (`#8ab4f8`) marks everything that points somewhere (links, `@file` mentions). Italic and strikethrough stay uncolored; nothing is colored at random.
 

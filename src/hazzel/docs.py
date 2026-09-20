@@ -24,7 +24,7 @@ SECTIONS: list[tuple[str, list[str]]] = [
         "Slash commands",
         [
             "/model — switch provider/model   /help — quick overview   /docs — this guide",
-            "/status /diff /commit /log — git core (push/pull via ! with approval)",
+            "/status /diff /commit /log /review — git core (push/pull via ! with approval)",
             "Run shell commands with ! or ask Hazzel to run them (approval first).",
             "Suffix ! with & (`!pytest -q &`) to run in the background; /jobs lists, polls, and kills jobs.",
             "/plan on|off — read-only exploration   /think on|off — deeper reasoning   /goal — objective, run it with /goal run",
@@ -58,8 +58,9 @@ SECTIONS: list[tuple[str, list[str]]] = [
     (
         "Git workflow",
         [
-            "Typical flow: edit → /commit (drafts a message, y/e/n) → !git push.",
+            "Typical flow: edit → /review → /commit (drafts a message, y/e/n) → !git push.",
             "/status and /diff [--staged] inspect; /log shows recents.",
+            "/review [--staged] reads the diff back and flags risks, gaps, and what to fix before committing — read-only, changes nothing.",
         ],
     ),
     (

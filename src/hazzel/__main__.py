@@ -210,6 +210,33 @@ def main(argv=None):
                 continue
             ui.show_git_log(out, _git.branch_current())
             continue
+        if low_in.startswith("/review") or low_in == "review":
+            staged = "--staged" in low_in or "staged" in low_in.split()
+            from hazzel import review as _review
+            _last_user_input = user_input
+            ui.show_loader("Reviewing diff…")
+            try:
+                files, markdown, fallback, err = _review.review_working_tree(staged=staged)
+            except KeyboardInterrupt:
+                ui.hide_loader()
+                ui.show_hazzel_message("Cancelled.")
+                continue
+            ui.hide_loader()
+            if err:
+                ui.show_error(err)
+                continue
+            if not files:
+                message = (
+                    "Nothing staged — `git add` first, or drop --staged."
+                    if staged
+                    else "Nothing to review — working tree is clean."
+                )
+                console.print(f"  {message}", style="dim")
+                console.print()
+                continue
+            _last_response = markdown
+            ui.show_review(markdown, files, staged=staged, fallback=fallback)
+            continue
         parts_plan = user_input.strip().lower().split()
         if parts_plan and parts_plan[0] == "/plan":
             arg = parts_plan[1] if len(parts_plan) > 1 else ""

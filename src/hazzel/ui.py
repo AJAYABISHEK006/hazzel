@@ -70,6 +70,7 @@ SLASH_COMMANDS = [
     {"name": "/goal", "desc": "objective + run · criteria"},
     {"name": "/status", "desc": "git working-tree status"},
     {"name": "/diff", "desc": "git diff preview"},
+    {"name": "/review", "desc": "read-only review of uncommitted diff"},
     {"name": "/commit", "desc": "suggest + commit (approval)"},
     {"name": "/log", "desc": "recent commits"},
     {"name": "/help", "desc": "show help"},
@@ -1477,6 +1478,28 @@ def show_git_commit(result):
     console.print()
 
 
+def show_review(markdown, files, staged=False, fallback=False):
+    total_add = sum(f.get("added", 0) for f in files or [])
+    total_del = sum(f.get("deleted", 0) for f in files or [])
+    rule()
+    title = Text()
+    title.append("  Diff review", style="bold white")
+    title.append(f"  ·  {len(files)} file(s)", style=DIM_COLOR)
+    if files:
+        title.append(f"  ·  +{total_add} −{total_del}", style=SUCCESS_COLOR)
+    title.append("  ·  staged" if staged else "  ·  unstaged", style=DIM_COLOR)
+    if fallback:
+        title.append("  ·  offline heuristics", style=DIM_COLOR)
+    console.print(title)
+    console.print()
+    if markdown and markdown.strip():
+        from .formatter import print_response
+
+        print_response(console, markdown)
+    console.print(Text("  Read-only — nothing changed. /commit when ready.", style=DIM_COLOR))
+    rule()
+
+
 def show_git_suggest(message, fallback=False):
     rule()
     title = Text()
@@ -1697,6 +1720,7 @@ _HELP_SECTIONS = [
     ("Git", [
         ("/status", "working-tree status"),
         ("/diff", "changed files + full diff [--staged]"),
+        ("/review", "read-only review of the uncommitted diff"),
         ("/commit", "suggest message + approval"),
         ("/log", "recent commits"),
     ]),

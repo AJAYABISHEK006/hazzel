@@ -10,5 +10,6 @@ Must-have features tracked against competitors.
 | MCP (Model Context Protocol) | Now the standard extension mechanism. Even a minimal stdio transport gets you access to the entire MCP server ecosystem. | Shipped (minimal stdio transport in `mcp.py`: `.hazzel/mcp.json` + global config, lazy `initialize`/`tools/list`/`tools/call`, single skill-like `mcp` tool with read-only discovery, `/mcp` REPL command) |
 | Parallel tool execution | Biggest speed win — run independent tool calls concurrently instead of sequentially. | Shipped (read-only batches run in ThreadPoolExecutor, writes stay sequential) |
 | Reasoning model pass-through (`/think` mode) | Surface model reasoning levels directly; let power models think harder on demand. | Shipped (`/think on` toggles extended thinking: Anthropic `thinking`, OpenAI + GPT-OSS `reasoning_effort`, with graceful fallback when unsupported) |
+| Diff review pass (`/review`) | Catch mistakes before they land: read the working diff back with the model and surface risks and gaps without leaving the terminal. | Shipped (read-only, working or `--staged` diff, 20-file/12k-char caps, untracked files included, deterministic offline fallback) |
 
 Priority order: polish shipped features (named sessions, richer MCP coverage) → new transports.

@@ -99,7 +99,7 @@ Diff-preview-and-approve editing, `/undo` backed by real checkpoints, shell comm
 
 **Speaks fluent git**
 
-`/status`, `/diff --staged`, `/commit` with an auto-drafted Conventional Commit message and diff preview, `/log` — reads run instantly with zero LLM round-trip.
+`/status`, `/diff --staged`, `/review` (read-only review of what you're about to commit), `/commit` with an auto-drafted Conventional Commit message and diff preview, `/log` — reads run instantly with zero LLM round-trip.
 
 Push and pull go through the standard approval flow.
 
@@ -165,7 +165,7 @@ Nothing is metered by Hazzel — you pay your provider directly, or nothing at a
 | Group      | Commands                                                                               |
 | ---------- | -------------------------------------------------------------------------------------- |
 | Modes      | `/model` · `/plan on\|off` · `/think on\|off` · `/goal [@objective]`                   |
-| Git        | `/status` · `/diff [--staged]` · `/commit` · `/log`                                    |
+| Git        | `/status` · `/diff [--staged]` · `/review` · `/commit` · `/log`                        |
 | Cost       | `/usage [today\|week\|month\|--by-model]` · `/budget`                                  |
 | Extend     | `/mcp [server [tool]]` · `/skills [name]` · `/init`                                    |
 | Transcript | `/export` · `/copy` · `/retry` · `/jobs` · `/undo [n]` · `/session restore` · `/clear` |
