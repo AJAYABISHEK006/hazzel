@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/pypi/v/hazzel" alt="PyPI">
   </a>
   <a href="https://pypistats.org/packages/hazzel">
-    <img src="https://img.shields.io/pypi/dm/hazzel" alt="PyPI downloads">
+    <img src="https://img.shields.io/badge/downloads-4k%2Fmonth-blue" alt="Downloads">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-green" alt="License">
