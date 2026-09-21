@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/pypi/v/hazzel" alt="PyPI">
   </a>
   <a href="https://pypistats.org/packages/hazzel">
-    <img src="https://img.shields.io/badge/downloads-3.5k%2Fmonth-blue" alt="Downloads">
+    <img src="https://img.shields.io/pypi/dm/hazzel" alt="PyPI downloads">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-green" alt="License">
@@ -28,6 +28,8 @@
 </p>
 
 ![Hazzel demo](assets/demo.gif)
+
+> Built with help from [@ronaldsterners](https://github.com/ronaldsterners) · [@Gambit-Checkmate](https://github.com/Gambit-Checkmate) (first external PR, v1.5.1) · [@DYNOSuprovo](https://github.com/DYNOSuprovo) (#12) — [good first issues welcome](https://github.com/mukundzha/hazzel/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 **Recently shipped:** `NO_COLOR` support — piped logs and dumb terminals stay plain (#12, @DYNOSuprovo) · v1.5.3 SEO landing page · confirmation prompts accept `yes` — first external contribution (@Gambit-Checkmate, 1.5.1) · `/review` (1.5.0) · background `!cmd &` jobs (1.4.9) — [full changelog](CHANGELOG.md)
 
@@ -135,6 +137,14 @@ If you need a heavier, more automated agent, better options exist. If you want t
 
 ## Support Hazzel
 
+<a href="https://star-history.com/#mukundzha/hazzel&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=mukundzha/hazzel&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=mukundzha/hazzel&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=mukundzha/hazzel&type=Date" />
+ </picture>
+</a>
+
 Hazzel is free and open-source, and it plans to stay both. The cheapest support costs nothing: use it, report what breaks, or send a PR.
 
 If you'd rather throw money at the problem, that works too — it goes straight into maintainer time for docs, fixes, and reviews:
@@ -187,6 +197,8 @@ Issues and PRs genuinely welcome — `ROADMAP.md` tracks what's next, `CONTRIBUT
 ## License
 
 AGPL-3.0-or-later. See [LICENSE](LICENSE).
+
+Why AGPL? It keeps hosted clones open — if you run Hazzel as a service, share your changes back. Normal use (install it, use it at work, ship code it helped you write) is unaffected — only re-hosting Hazzel itself triggers share-alike. If the license blocks adoption at your company, [open an issue](https://github.com/mukundzha/hazzel/issues/new?template=feature_request.md) — dual-licensing is on the table with enough demand.
 
 ---
 
