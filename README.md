@@ -29,7 +29,7 @@
 
 ![Hazzel demo](assets/demo.gif)
 
-**Recently shipped:** confirmation prompts accept `yes` — first external contribution (@Gambit-Checkmate, 1.5.1) · `/review` (1.5.0) · background `!cmd &` jobs (1.4.9) · git `/commit` with auto-drafted messages (1.4.8) · stdlib-only MCP client (1.4.7) — [full changelog](CHANGELOG.md)
+**Recently shipped:** `NO_COLOR` support — piped logs and dumb terminals stay plain (#12, @DYNOSuprovo) · v1.5.3 SEO landing page · confirmation prompts accept `yes` — first external contribution (@Gambit-Checkmate, 1.5.1) · `/review` (1.5.0) · background `!cmd &` jobs (1.4.9) — [full changelog](CHANGELOG.md)
 
 ## Try it in your project
 
@@ -129,7 +129,7 @@ Type `/` to filter live, `@` to attach a file, `/docs` for the full guide withou
 
 ## What it's honest about not being
 
-v1.5.3, early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
+v1.5.3 + `NO_COLOR` (unreleased), early-stage. No autonomous PRs, no cloud dashboard, no session sync across machines. It doesn't replace your editor — it sits in the terminal next to it, and it stays small on purpose.
 
 If you need a heavier, more automated agent, better options exist. If you want to see exactly what's about to happen to your files before it happens, this is built for that.
 
@@ -168,11 +168,17 @@ If you'd rather throw money at the problem, that works too — it goes straight 
         <sub><b>Gambit-Checkmate</b></sub>
       </a>
     </td>
+    <td align="center">
+      <a href="https://github.com/DYNOSuprovo">
+        <img src="https://avatars.githubusercontent.com/DYNOSuprovo?v=4&s=80" width="80" alt="DYNOSuprovo"/><br/>
+        <sub><b>DYNOSuprovo</b></sub>
+      </a>
+    </td>
   </tr>
   </table>
 </p>
 
-Every PR lands through the same door: reviewed, CI-verified on four Python versions, credited in the release notes. ronaldsterners and Gambit-Checkmate started with a good first issue — the next row is one PR away.
+Every PR lands through the same door: reviewed, CI-verified on four Python versions, credited in the release notes. ronaldsterners, Gambit-Checkmate, and DYNOSuprovo all started with a good first issue — the next row is one PR away.
 
 ## Contributing
 
