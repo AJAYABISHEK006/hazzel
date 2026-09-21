@@ -22,6 +22,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev]" pytest-cov
       - run: ruff check .
-      - run: pytest -q
+      - run: pytest -q --cov=src/hazzel --cov-report=term-missing
+      - uses: codecov/codecov-action@v5
