@@ -73,11 +73,10 @@ cd your-project
 hazzel</code></pre>
     <p>The whole loop is <code>agent/core.py</code>, every action is in <code>tools/</code>, the undo system is <code>safety.py</code> — and Hazzel stops before every write to show you what is about to happen.</p>
     <div class="turn" aria-label="Example session">
-      <p class="turn-head">Hazzel <span class="dim">1.5.3</span></p>
-      <p class="dim">~/hazzel</p>
+      <p class="turn-head">Hazzel <span class="dim">1.5.3 · ~/hazzel</span></p>
       <p class="turn-prompt">❯ Fix the failing test in tests/test_agent.py</p>
-      <p class="dim">read_file · edit_file (diff approved) · run_command pytest -q — passed</p>
-      <p class="dim">openai/gpt-oss-120b · 1.2k tokens · $0.004 session · build · @ tag file</p>
+      <p class="turn-tools">read_file · edit_file (diff approved) · run_command pytest -q — passed</p>
+      <p class="turn-meta">openai/gpt-oss-120b · 1.2k tokens · $0.004 session · build · @ tag file</p>
     </div>
   </section>
   <section aria-labelledby="why">

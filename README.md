@@ -151,34 +151,34 @@ If you'd rather throw money at the problem, that works too — it goes straight 
 
 <p align="center">
   <a href="https://paypal.me/mukundzi">
-    <img src="https://img.shields.io/badge/Donate-PayPal-0070BA?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal">
+    <img src="https://img.shields.io/badge/Donate-PayPal-0070BA?sHazzel: the open source terminal coding agenttyle=for-the-badge&logo=paypal&logoColor=white" alt="Donate via PayPal">
   </a>
 </p>
 
-<p align="center">Who's behind this</p>
+## Who's behind this
 
-<p align="center">
-  <table align="center">
+<p align="left">
+  <table align="left">
     <tr>
-    <td align="center">
+    <td align="left">
       <a href="https://github.com/mukundzha">
         <img src="https://avatars.githubusercontent.com/mukundzha?v=4&s=80" width="80" alt="mukundzha"/><br/>
         <sub><b>Mukund Jha</b><br/>creator</sub>
       </a>
     </td>
-    <td align="center">
+    <td align="left">
       <a href="https://github.com/ronaldsterners">
         <img src="https://avatars.githubusercontent.com/ronaldsterners?v=4&s=80" width="80" alt="ronaldsterners"/><br/>
         <sub><b>ronaldsterners</b></sub>
       </a>
     </td>
-    <td align="center">
+    <td align="left">
       <a href="https://github.com/Gambit-Checkmate">
         <img src="https://avatars.githubusercontent.com/Gambit-Checkmate?v=4&s=80" width="80" alt="Gambit-Checkmate"/><br/>
         <sub><b>Gambit-Checkmate</b></sub>
       </a>
     </td>
-    <td align="center">
+    <td align="left">
       <a href="https://github.com/DYNOSuprovo">
         <img src="https://avatars.githubusercontent.com/DYNOSuprovo?v=4&s=80" width="80" alt="DYNOSuprovo"/><br/>
         <sub><b>DYNOSuprovo</b></sub>

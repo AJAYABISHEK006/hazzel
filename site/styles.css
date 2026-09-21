@@ -65,7 +65,7 @@ code {
 
 h1 {
   font-size: 37px;
-  margin: 40px 0 8px;
+  margin: 8px 0 4px;
   letter-spacing: -1px;
 }
 
@@ -138,12 +138,22 @@ li { margin-bottom: 8px; }
 
 .turn p { margin: 0 0 6px; }
 .turn p:last-child { margin-bottom: 0; }
-.turn-prompt { font-weight: 700; }
-.turn-head { font-weight: 700; }
+.turn-head { font-weight: 700; margin-bottom: 10px; }
+.turn-head .dim { font-weight: 400; }
+.turn-prompt { font-weight: 700; margin-bottom: 10px; }
+.turn-tools { margin-bottom: 0; }
+.turn-meta {
+  color: var(--dim);
+  font-size: 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
 .dot { color: var(--accent); }
 .dim { color: var(--dim); }
 
 section { padding: 28px 0 8px; }
+main > section:first-child { padding-top: 8px; }
 
 .skip {
   position: absolute;
@@ -175,21 +185,23 @@ pre {
 }
 pre code { background: none; padding: 0; }
 
-.table-wrap { overflow-x: auto; margin: 0 0 12px; }
+.table-wrap { overflow-x: auto; margin: 20px 0 24px; }
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 15px;
   line-height: 1.6;
 }
-caption { text-align: left; font-size: 14px; padding-bottom: 8px; }
+caption { text-align: left; font-size: 14px; padding-bottom: 12px; }
 th, td {
   text-align: left;
-  padding: 8px 12px 8px 0;
+  padding: 12px 20px 12px 0;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
-thead th { color: var(--dim); font-weight: 500; }
+th:last-child, td:last-child { padding-right: 0; }
+thead th { color: var(--dim); font-weight: 500; padding-bottom: 14px; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 tbody th[scope="row"] { font-weight: 700; white-space: nowrap; }
 
 dl > div { margin: 0 0 14px; }
